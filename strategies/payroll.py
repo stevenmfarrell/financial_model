@@ -35,11 +35,21 @@ class MaximizeContributionsPayroll(PayrollStrategy):
             return plan
 
         # 2. Priority 1: HSA Contribution
-        actual_hsa = min(remaining_funds, context.regulations.annual_hsa_limit)
+        actual_hsa = min(
+            remaining_funds,
+            context.regulations.get_annual_hsa_limit(
+                context.world, context.personal, plan
+            ),
+        )
         remaining_funds -= actual_hsa
 
         # 3. Priority 2: 401k Contribution
-        actual_401k = min(remaining_funds, context.regulations.annual_401k_limit)
+        actual_401k = min(
+            remaining_funds,
+            context.regulations.get_annual_401k_limit(
+                context.world, context.personal, plan
+            ),
+        )
         remaining_funds -= actual_401k
 
         # 4. Calculate Employer Match

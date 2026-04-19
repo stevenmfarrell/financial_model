@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Protocol
+from typing import Callable, Literal, Protocol
 
 
 @dataclass(frozen=True)
@@ -20,6 +20,7 @@ class MarketConditions:
 @dataclass(frozen=True)
 class PersonalState:
     age: int
+    marital_status: Literal["married", "single"]
 
 
 @dataclass(frozen=True)
@@ -180,26 +181,23 @@ class YearlyDecisionsPlan:
         return abs(self.total_inflows - self.total_outflows) < 1
 
 
-class TaxCalculator(Protocol):
-    """
-    Calculates the tax liability generated in a given year
-    """
-
+class RegulatoryCalculator(Protocol):
     def __call__(
         self,
+        world: WorldState,
         personal: PersonalState,
-        existing_plan: YearlyDecisionsPlan,
+        plan: YearlyDecisionsPlan,
     ) -> float:
-        """Updates the YearlyDecisionsPlan based on the current state and personal info."""
+        """Calculates taxes due based on the current state and personal info."""
         ...
 
 
 @dataclass(frozen=True)
 class RegulatoryEnvironment:
-    annual_401k_limit: float
-    annual_hsa_limit: float
-    annual_ira_limit: float
-    tax_fn: TaxCalculator
+    get_annual_401k_limit: RegulatoryCalculator
+    get_annual_hsa_limit: RegulatoryCalculator
+    get_annual_ira_limit: RegulatoryCalculator
+    get_taxes_due: RegulatoryCalculator
 
 
 @dataclass(frozen=True)

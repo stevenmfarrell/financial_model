@@ -6,10 +6,15 @@ from models import (
     MarketConditions,
     RegulatoryEnvironment,
 )
+from regulations.limits import (
+    irs_401k_limit_2026,
+    irs_hsa_limit_2026,
+    irs_roth_ira_limit_2026_household,
+)
 from simulation_runner import run_simulation
 
 from output import create_history_dataframe
-from strategies.tax import (
+from regulations.tax import (
     BrokerageCapitalGainsTax,
     CombinedTaxCalculator,
     FlatStateIncomeTaxStrategy,
@@ -26,14 +31,11 @@ from strategies.withdrawal import SequentialWithdrawal
 
 def regulations_factory(world: WorldState):
     regulations = RegulatoryEnvironment(
-        annual_401k_limit=23500 * world.cumulative_inflation_index,
-        annual_hsa_limit=5000 * world.cumulative_inflation_index,
-        annual_ira_limit=11000 * world.cumulative_inflation_index,
-        tax_fn=CombinedTaxCalculator(
-            USFederalIncomeTax2026(
-                filing_status="mfj",
-                cumulative_inflation_index=world.cumulative_inflation_index,
-            ),
+        get_annual_401k_limit=irs_401k_limit_2026,
+        get_annual_hsa_limit=irs_hsa_limit_2026,
+        get_annual_ira_limit=irs_roth_ira_limit_2026_household,
+        get_taxes_due=CombinedTaxCalculator(
+            USFederalIncomeTax2026(),
             FlatStateIncomeTaxStrategy(0.0466),
             BrokerageCapitalGainsTax(),
         ),
@@ -44,7 +46,7 @@ def regulations_factory(world: WorldState):
 def main():
     # 1. Initialize the user's starting states
     initial_world = WorldState(year=2026)
-    initial_personal = PersonalState(age=34)
+    initial_personal = PersonalState(age=34, marital_status="married")
     initial_financial = FinancialState(
         taxable_brokerage_balance=287000.0,
         taxable_brokerage_basis=150000.0,

@@ -1,20 +1,17 @@
-from typing import Literal
-from models import PersonalState, YearlyDecisionsPlan, TaxCalculator
+from models import PersonalState, WorldState, YearlyDecisionsPlan, RegulatoryCalculator
 
 
-class USFederalIncomeTax2026(TaxCalculator):
+class USFederalIncomeTax2026(RegulatoryCalculator):
     """
     Implements 2026 US Federal logic with inflation-indexed brackets
     and early withdrawal penalties.
     """
 
-    def __init__(
-        self,
-        cumulative_inflation_index: float,
-        filing_status: Literal["single", "mfj"] = "single",
-    ):
+    def _setup(self, world: WorldState, personal: PersonalState):
+        self.cumulative_inflation_index = world.cumulative_inflation_index
+        filing_status = "mfj" if personal.marital_status == "married" else "single"
+
         self.standard_deduction = 16100 if filing_status == "single" else 32200
-        self.cumulative_inflation_index = cumulative_inflation_index
         # FICA rates and base
         self.ss_rate, self.ss_wage_base = 0.062, 184500
         self.med_rate, self.addl_med_rate = 0.0145, 0.009
@@ -44,9 +41,11 @@ class USFederalIncomeTax2026(TaxCalculator):
 
     def __call__(
         self,
+        world: WorldState,
         personal: PersonalState,
         plan: YearlyDecisionsPlan,
     ) -> float:
+        self._setup(world, personal)
         # 1. Inflation Adjustment
         # Scale deduction and brackets to maintain real-dollar thresholds
         inf_factor = self.cumulative_inflation_index
@@ -91,19 +90,19 @@ class USFederalIncomeTax2026(TaxCalculator):
         return taxes
 
 
-class BrokerageCapitalGainsTax(TaxCalculator):
+class BrokerageCapitalGainsTax(RegulatoryCalculator):
     """Calculates tax on the 'Gain' portion of brokerage liquidations."""
 
     def __init__(self, long_term_rate: float = 0.15):
         self.rate = long_term_rate
 
-    def __call__(self, personal: PersonalState, plan) -> float:
+    def __call__(self, world: WorldState, personal: PersonalState, plan) -> float:
         cap_gains_tax = plan.from_taxable_brokerage_growth * self.rate
 
         return cap_gains_tax
 
 
-class FlatStateIncomeTaxStrategy(TaxCalculator):
+class FlatStateIncomeTaxStrategy(RegulatoryCalculator):
     """
     Applies a simple flat percentage tax to all taxable income, which in the case for states includes capital gains.
     Useful for modeling state taxes (e.g., Utah's 4.65% rate).
@@ -113,7 +112,9 @@ class FlatStateIncomeTaxStrategy(TaxCalculator):
         self.rate = rate
         self.label = label
 
-    def __call__(self, personal: PersonalState, plan: YearlyDecisionsPlan) -> float:
+    def __call__(
+        self, world: WorldState, personal: PersonalState, plan: YearlyDecisionsPlan
+    ) -> float:
         # Calculate ordinary taxable income
         taxable_base = plan.total_taxable_income + plan.from_taxable_brokerage_growth
 
@@ -121,16 +122,18 @@ class FlatStateIncomeTaxStrategy(TaxCalculator):
         return tax_amount
 
 
-class CombinedTaxCalculator(TaxCalculator):
+class CombinedTaxCalculator(RegulatoryCalculator):
     """Aggregates multiple tax components (Fed, State, Gains)."""
 
-    def __init__(self, *strategies: TaxCalculator):
+    def __init__(self, *strategies: RegulatoryCalculator):
         self.strategies = strategies
 
-    def __call__(self, personal: PersonalState, plan: YearlyDecisionsPlan) -> float:
+    def __call__(
+        self, world: WorldState, personal: PersonalState, plan: YearlyDecisionsPlan
+    ) -> float:
         taxes = 0
 
         for strat in self.strategies:
-            taxes += strat(personal, plan)
+            taxes += strat(world, personal, plan)
 
         return taxes

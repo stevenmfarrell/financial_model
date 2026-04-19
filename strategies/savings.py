@@ -37,7 +37,12 @@ class WaterfallSavings(SavingsStrategy):
         surplus -= to_cash
 
         # 3. Priority 2: Roth IRA
-        to_roth_ira = min(surplus, context.regulations.annual_ira_limit)
+        to_roth_ira = min(
+            surplus,
+            context.regulations.get_annual_ira_limit(
+                context.world, context.personal, plan
+            ),
+        )
         surplus -= to_roth_ira
 
         # 4. Priority 3: Taxable Brokerage (The "Overflow" bucket)

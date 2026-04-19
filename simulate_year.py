@@ -7,7 +7,7 @@ from models import (
     MarketConditions,
     RegulationsFactory,
     SimulationContext,
-    TaxCalculator,
+    RegulatoryCalculator,
     PersonalState,
     WithdrawalStrategy,
     WorldState,
@@ -129,7 +129,7 @@ def solve_withdrawal_and_tax(
     context: SimulationContext,
     initial_plan: YearlyDecisionsPlan,
     withdrawal_strat: WithdrawalStrategy,
-    tax_calculator: TaxCalculator,
+    tax_calculator: RegulatoryCalculator,
     max_iterations: int = 15,
     tolerance: float = 1.0,
 ) -> YearlyDecisionsPlan:
@@ -145,7 +145,7 @@ def solve_withdrawal_and_tax(
         current_plan = withdrawal_strat(context, current_plan)
 
         # 2. Update the tax bill (based on the new withdrawals)
-        taxes_due = tax_calculator(context.personal, current_plan)
+        taxes_due = tax_calculator(context.world, context.personal, current_plan)
         current_plan = replace(current_plan, to_taxes=taxes_due)
 
         # 3. Check for convergence based on the updated tax bill
@@ -211,7 +211,7 @@ def simulate_financial_year(
         context,
         decisions,
         config.withdrawal_strat,
-        regulations.tax_fn,
+        regulations.get_taxes_due,
     )
     decisions = config.savings_strat(context, decisions)
 
