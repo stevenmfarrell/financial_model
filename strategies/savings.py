@@ -12,13 +12,12 @@ class WaterfallSavings(SavingsStrategy):
     Priority: Cash Reserve (Emergency Fund) -> Roth IRA -> Brokerage.
     """
 
-    def __init__(self, target_cash_reserve: float, roth_ira_limit: float):
+    def __init__(self, target_cash_reserve: float):
         """
         target_cash_reserve: The total balance you want to maintain in liquid cash.
         roth_ira_limit: The maximum annual contribution for a Roth IRA.
         """
         self.target_cash_reserve = target_cash_reserve
-        self.roth_ira_limit = roth_ira_limit
 
     def __call__(
         self,
@@ -38,7 +37,7 @@ class WaterfallSavings(SavingsStrategy):
         surplus -= to_cash
 
         # 3. Priority 2: Roth IRA
-        to_roth_ira = min(surplus, self.roth_ira_limit)
+        to_roth_ira = min(surplus, context.regulations.annual_ira_limit)
         surplus -= to_roth_ira
 
         # 4. Priority 3: Taxable Brokerage (The "Overflow" bucket)

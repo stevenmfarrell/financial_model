@@ -1,7 +1,5 @@
-- Target cash
-- Roth taxes when early withdrawn? Basis vs gains?
 - Social Security basic vs smart
-- separate regulatory framework (taxes, contribution limits, etc) from genuine personal strategies
+- Roth taxes when early withdrawn? Basis vs gains?
 - half of market growth happens before, half after?
 - required minimum distributions
 - Ladder rollover strategies
@@ -9,7 +7,6 @@
 - break when failing to resolve?
 - handle multiple mortgages (key value?)
 - handle multiple people, distinct social security
-- not all things are tracking with inflation
 - show csv in real dollars
 - monte carlo market conditions
 - dashboards 

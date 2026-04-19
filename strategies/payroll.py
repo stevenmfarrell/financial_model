@@ -6,25 +6,20 @@ from models import (
 )
 
 
-class StandardPayrollStrategy(PayrollStrategy):
+class MaximizeContributionsPayroll(PayrollStrategy):
     """
-    Manages statutory and elective payroll deductions.
-    Calculates 401k contributions, HSA deferrals, and employer matching logic.
+    Aggressively try to maximize all possible pre-tax contributions
     """
 
     def __init__(
         self,
-        trad_401k_contribution: float = 23500.0,  # 2026 Projected Limit
-        hsa_contribution: float = 4300.0,  # 2026 Projected Individual Limit
-        match_percent: float = 1.0,  # 100% match
-        match_cap_percent: float = 0.04,  # Up to 4% of gross salary
-        match_hsa: float = 0,
+        match_401k_percent: float = 1.0,  # 100% match
+        match_401k_cap_percent: float = 0.04,  # Up to 4% of gross salary
+        match_hsa_amount: float = 0,
     ):
-        self.trad_401k_contribution = trad_401k_contribution
-        self.hsa_contribution = hsa_contribution
-        self.match_percent = match_percent
-        self.match_cap_percent = match_cap_percent
-        self.match_hsa = match_hsa
+        self.match_401k_percent = match_401k_percent
+        self.match_401k_cap_percent = match_401k_cap_percent
+        self.match_hsa = match_hsa_amount
 
     def __call__(
         self,
@@ -40,17 +35,17 @@ class StandardPayrollStrategy(PayrollStrategy):
             return plan
 
         # 2. Priority 1: HSA Contribution
-        actual_hsa = min(remaining_funds, self.hsa_contribution)
+        actual_hsa = min(remaining_funds, context.regulations.annual_hsa_limit)
         remaining_funds -= actual_hsa
 
         # 3. Priority 2: 401k Contribution
-        actual_401k = min(remaining_funds, self.trad_401k_contribution)
+        actual_401k = min(remaining_funds, context.regulations.annual_401k_limit)
         remaining_funds -= actual_401k
 
         # 4. Calculate Employer Match
         # Match is based on the actual 401k contribution made
-        potential_match = actual_401k * self.match_percent
-        actual_match = min(potential_match, salary * self.match_cap_percent)
+        potential_match = actual_401k * self.match_401k_percent
+        actual_match = min(potential_match, salary * self.match_401k_cap_percent)
 
         # 5. Update the Ledger
         return replace(
