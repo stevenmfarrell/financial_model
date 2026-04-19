@@ -1,4 +1,3 @@
-- Social Security basic vs smart
 - Roth taxes when early withdrawn? Basis vs gains?
 - half of market growth happens before, half after?
 - required minimum distributions

@@ -6,54 +6,68 @@ from models import (
 from regulatory_kernel.tax import (
     calculate_capital_gains_tax_kernel,
     calculate_early_withdrawal_penalty_kernel,
-    calculate_federal_tax_2026_kernel,
+    calculate_federal_tax_kernel,
     calculate_flat_tax_kernel,
-    calculate_taxable_income_2026_kernel,
+    calculate_taxable_income_kernel,
 )
 
 
-class USFederalIncomeTax2026(RegulatoryCalculator):
+class InflationTrackingFederalTaxCalculator(RegulatoryCalculator):
+    """
+    Generic Federal Income Tax calculator that scales thresholds
+    and deductions by inflation.
+    """
+
+    def __init__(
+        self,
+        std_deduction_married: float,
+        std_deduction_single: float,
+        brackets_married: list[tuple[float, float]],
+        brackets_single: list[tuple[float, float]],
+        ss_wage_base: float,
+        med_threshold_married: float,
+        med_threshold_single: float,
+        fica_rates: tuple[float, float, float],
+    ):
+        self.std_deduction_married = std_deduction_married
+        self.std_deduction_single = std_deduction_single
+        self.brackets_married = brackets_married
+        self.brackets_single = brackets_single
+        self.ss_wage_base = ss_wage_base
+        self.med_threshold_married = med_threshold_married
+        self.med_threshold_single = med_threshold_single
+        self.fica_rates = fica_rates
+
     def __call__(self, context: SimulationContext, plan: YearlyDecisionsPlan) -> float:
-        world, personal = context.world, context.personal
-        inf = world.cumulative_inflation_index
-        is_married = personal.marital_status == "married"
+        inf = context.world.cumulative_inflation_index
+        is_married = context.personal.marital_status == "married"
 
-        std_deduction = 32200 if is_married else 16100
-        raw_brackets = (
-            [
-                (24800, 0.10),
-                (100800, 0.12),
-                (211400, 0.22),
-                (403550, 0.24),
-                (512450, 0.32),
-                (768700, 0.35),
-                (float("inf"), 0.37),
-            ]
-            if is_married
-            else [
-                (12400, 0.10),
-                (50400, 0.12),
-                (105700, 0.22),
-                (201775, 0.24),
-                (256225, 0.32),
-                (640600, 0.35),
-                (float("inf"), 0.37),
-            ]
-        )
+        # 1. Scale Standard Deduction
+        std_deduction = (
+            self.std_deduction_married if is_married else self.std_deduction_single
+        ) * inf
 
+        # 2. Scale Tax Brackets
+        raw_brackets = self.brackets_married if is_married else self.brackets_single
         adj_brackets = [
             (limit * inf if limit != float("inf") else limit, rate)
             for limit, rate in raw_brackets
         ]
 
-        return calculate_federal_tax_2026_kernel(
+        # 3. Scale FICA and Medicare Thresholds
+        adj_ss_wage_base = self.ss_wage_base * inf
+        adj_med_threshold = (
+            self.med_threshold_married if is_married else self.med_threshold_single
+        ) * inf
+
+        return calculate_federal_tax_kernel(
             taxable_income=context.regulations.get_taxable_income(context, plan),
             wages=plan.gross_earned_income,
-            adj_standard_deduction=std_deduction * inf,
+            adj_standard_deduction=std_deduction,
             adj_brackets=adj_brackets,
-            adj_ss_wage_base=184500 * inf,
-            adj_addl_med_threshold=(250000 if is_married else 200000) * inf,
-            fica_rates=(0.062, 0.0145, 0.009),
+            adj_ss_wage_base=adj_ss_wage_base,
+            adj_addl_med_threshold=adj_med_threshold,
+            fica_rates=self.fica_rates,
         )
 
 
@@ -110,28 +124,33 @@ class CombinedTaxCalculator(RegulatoryCalculator):
         return taxes
 
 
-class TaxableIncomeCalculator2026(RegulatoryCalculator):
+class InflationTrackingTaxableIncomeCalculator(RegulatoryCalculator):
     """
-    Adapter that connects simulation state to the taxable income logic kernel.
+    Generic taxable income calculator that scales Social Security
+    taxability thresholds by inflation.
     """
+
+    def __init__(
+        self,
+        ss_base_threshold: float,
+        ss_upper_threshold: float,
+        ss_middle_tier_cap: float,
+    ):
+        self.ss_base_threshold = ss_base_threshold
+        self.ss_upper_threshold = ss_upper_threshold
+        self.ss_middle_tier_cap = ss_middle_tier_cap
 
     def __call__(self, context: SimulationContext, plan: YearlyDecisionsPlan) -> float:
         inf = context.world.cumulative_inflation_index
 
-        # For MFJ 2026 estimates:
-        BASE_THRESHOLD = 32000.0 * inf
-        UPPER_THRESHOLD = 44000.0 * inf
-        # 50% of the range between 32k and 44k is 6k
-        MIDDLE_TIER_CAP = 6000.0 * inf
-
-        # Delegate extraction to the kernel
-        return calculate_taxable_income_2026_kernel(
+        # Delegate logic to the kernel using inflated thresholds
+        return calculate_taxable_income_kernel(
             taxable_wages=plan.taxable_wages,
             traditional_withdrawals=plan.from_traditional_retirement,
             ss_received=plan.social_security_recieved,
-            ss_base_threshold=BASE_THRESHOLD,
-            ss_upper_threshold=UPPER_THRESHOLD,
-            ss_middle_tier_cap=MIDDLE_TIER_CAP,
+            ss_base_threshold=self.ss_base_threshold * inf,
+            ss_upper_threshold=self.ss_upper_threshold * inf,
+            ss_middle_tier_cap=self.ss_middle_tier_cap * inf,
         )
 
 

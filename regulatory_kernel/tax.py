@@ -1,4 +1,4 @@
-def calculate_taxable_income_2026_kernel(
+def calculate_taxable_income_kernel(
     taxable_wages: float,
     traditional_withdrawals: float,
     ss_received: float,
@@ -53,7 +53,7 @@ def calculate_capital_gains_tax_kernel(growth_amount: float, rate: float) -> flo
     return growth_amount * rate
 
 
-def calculate_federal_tax_2026_kernel(
+def calculate_federal_tax_kernel(
     taxable_income: float,
     wages: float,
     adj_standard_deduction: float,

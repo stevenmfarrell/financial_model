@@ -10,40 +10,60 @@ from regulatory_kernel.limits import (
 )
 
 
-class IRS401kLimit2026(RegulatoryCalculator):
+class InflationTracking401kLimit(RegulatoryCalculator):
+    """
+    Generic 401(k) limit calculator that scales baseline values by inflation.
+    Baseline values are injected at initialization.
+    """
+
+    def __init__(self, base_limit: float, catchup_amt: float):
+        self.base_limit = base_limit
+        self.catchup_amt = catchup_amt
+
     def __call__(self, context: SimulationContext, plan: YearlyDecisionsPlan) -> float:
+        # Scale the baseline values by the simulation's cumulative inflation index
         inf = context.world.cumulative_inflation_index
 
         return calculate_401k_limit_kernel(
-            age=context.personal.age, base_limit=23500.0 * inf, catchup_amt=7500.0 * inf
+            age=context.personal.age,
+            base_limit=self.base_limit * inf,
+            catchup_amt=self.catchup_amt * inf,
         )
 
 
-class IRSHSALimit2026(RegulatoryCalculator):
+class InflationTrackingHSALimit(RegulatoryCalculator):
     """
-    Adapter that connects simulation state to the HSA logic kernel.
-    Handles inflation scaling and state extraction.
+    Generic HSA limit calculator that scales baseline values by inflation.
+    Baseline values (single, family, catchup) are injected at initialization.
     """
+
+    def __init__(self, single_limit: float, family_limit: float, catchup_amt: float):
+        self.single_limit = single_limit
+        self.family_limit = family_limit
+        self.catchup_amt = catchup_amt
 
     def __call__(self, context: SimulationContext, plan: YearlyDecisionsPlan) -> float:
         inf = context.world.cumulative_inflation_index
         personal = context.personal
 
-        # The Adapter 'Bakes' the nominal constants for the current year
         return calculate_hsa_limit_kernel(
             age=personal.age,
             is_married=personal.marital_status == "married",
-            nominal_single_limit=4150.0 * inf,
-            nominal_family_limit=8300.0 * inf,
-            nominal_catchup_amt=1000.0 * inf,
+            nominal_single_limit=self.single_limit * inf,
+            nominal_family_limit=self.family_limit * inf,
+            nominal_catchup_amt=self.catchup_amt * inf,
         )
 
 
-class IRSHouseholdRothIRALimit2026(RegulatoryCalculator):
+class InflationTrackingHouseholdRothIRALimit(RegulatoryCalculator):
     """
-    Adapter that connects simulation state to the Roth IRA logic kernel.
-    Bakes nominal constants and extracts marital status.
+    Generic Roth IRA limit calculator that scales baseline values by inflation.
+    Baseline values (base limit, catchup) are injected at initialization.
     """
+
+    def __init__(self, base_limit: float, catchup_amt: float):
+        self.base_limit = base_limit
+        self.catchup_amt = catchup_amt
 
     def __call__(self, context: SimulationContext, plan: YearlyDecisionsPlan) -> float:
         inf = context.world.cumulative_inflation_index
@@ -52,6 +72,6 @@ class IRSHouseholdRothIRALimit2026(RegulatoryCalculator):
         return calculate_household_roth_ira_limit_kernel(
             age=personal.age,
             is_married=personal.marital_status == "married",
-            nominal_base_limit=7000.0 * inf,
-            nominal_catchup_amt=1000.0 * inf,
+            nominal_base_limit=self.base_limit * inf,
+            nominal_catchup_amt=self.catchup_amt * inf,
         )

@@ -7,11 +7,11 @@ from models import (
     RegulatoryEnvironment,
 )
 from regulations.limits import (
-    IRS401kLimit2026,
-    IRSHSALimit2026,
-    IRSHouseholdRothIRALimit2026,
+    InflationTracking401kLimit,
+    InflationTrackingHSALimit,
+    InflationTrackingHouseholdRothIRALimit,
 )
-from regulations.social_security import SocialSecurityPayout2026
+from regulations.social_security import InflationTrackingSocialSecurityPayout
 from simulation_runner import run_simulation
 
 from output import create_history_dataframe
@@ -20,8 +20,8 @@ from regulations.tax import (
     CombinedTaxCalculator,
     EarlyWithdrawalPenaltyCalculator,
     FlatStateIncomeTaxStrategy,
-    TaxableIncomeCalculator2026,
-    USFederalIncomeTax2026,
+    InflationTrackingFederalTaxCalculator,
+    InflationTrackingTaxableIncomeCalculator,
 )
 from strategies.mortgage import FixedMortgage
 from strategies.payroll import MaximizeContributionsPayroll
@@ -34,17 +34,54 @@ from strategies.withdrawal import SequentialWithdrawal
 
 def regulations_factory(world: WorldState):
     regulations = RegulatoryEnvironment(
-        get_annual_401k_limit=IRS401kLimit2026(),
-        get_annual_hsa_limit=IRSHSALimit2026(),
-        get_annual_ira_limit=IRSHouseholdRothIRALimit2026(),
+        get_annual_401k_limit=InflationTracking401kLimit(
+            base_limit=23500.0, catchup_amt=7500.0
+        ),
+        get_annual_hsa_limit=InflationTrackingHSALimit(
+            single_limit=4150.0, family_limit=8300.0, catchup_amt=1000.0
+        ),
+        get_annual_ira_limit=InflationTrackingHouseholdRothIRALimit(
+            base_limit=7000.0, catchup_amt=1000.0
+        ),
         get_taxes_due=CombinedTaxCalculator(
-            USFederalIncomeTax2026(),
+            InflationTrackingFederalTaxCalculator(
+                std_deduction_married=32200.0,
+                std_deduction_single=16100.0,
+                brackets_married=[
+                    (24800, 0.10),
+                    (100800, 0.12),
+                    (211400, 0.22),
+                    (403550, 0.24),
+                    (512450, 0.32),
+                    (768700, 0.35),
+                    (float("inf"), 0.37),
+                ],
+                brackets_single=[
+                    (12400, 0.10),
+                    (50400, 0.12),
+                    (105700, 0.22),
+                    (201775, 0.24),
+                    (256225, 0.32),
+                    (640600, 0.35),
+                    (float("inf"), 0.37),
+                ],
+                ss_wage_base=184500.0,
+                med_threshold_married=250000.0,
+                med_threshold_single=200000.0,
+                fica_rates=(0.062, 0.0145, 0.009),
+            ),
             FlatStateIncomeTaxStrategy(0.0466),
             BrokerageCapitalGainsTax(),
             EarlyWithdrawalPenaltyCalculator(),
         ),
-        get_social_security_benefits=SocialSecurityPayout2026(),
-        get_taxable_income=TaxableIncomeCalculator2026(),
+        get_social_security_benefits=InflationTrackingSocialSecurityPayout(
+            b1=1200.0, b2=7200.0
+        ),
+        get_taxable_income=InflationTrackingTaxableIncomeCalculator(
+            ss_base_threshold=32000.0,
+            ss_upper_threshold=44000.0,
+            ss_middle_tier_cap=6000.0,
+        ),
     )
     return regulations
 
