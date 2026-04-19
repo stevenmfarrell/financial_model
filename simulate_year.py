@@ -2,12 +2,14 @@ from dataclasses import replace
 from typing import Tuple
 
 from decisions_config import YearlyDecisionsConfiguration
-from model import (
+from models import (
     FinancialState,
     MarketConditions,
-    TaxStrategy,
+    RegulationsFactory,
+    TaxCalculator,
     PersonalState,
     WithdrawalStrategy,
+    WorldState,
     YearlyDecisionsPlan,
 )
 
@@ -49,8 +51,6 @@ def apply_market(financial: FinancialState, market: MarketConditions) -> Financi
         cash_balance=financial.cash_balance * (1 + market.annual_cash_return),
         primary_residence_value=financial.primary_residence_value
         * (1 + market.annual_home_appreciation_rate),
-        cumulative_inflation_index=financial.cumulative_inflation_index
-        * (1 + market.annual_inflation_rate),
     )
 
 
@@ -90,22 +90,14 @@ def apply_decisions_to_financial_state(
     new_brokerage_balance = (
         financial.taxable_brokerage_balance
         + plan.to_brokerage
-        - plan.from_taxable_brokerage
+        - plan.from_taxable_brokerage_growth
+        - plan.from_taxable_brokerage_basis
     )
 
-    # Basis reduction logic:
-    # If we withdraw $10k and our basis is 50% of our balance,
-    # we reduce our basis by $5k.
-    if financial.taxable_brokerage_balance > 0:
-        basis_ratio = (
-            financial.taxable_brokerage_basis / financial.taxable_brokerage_balance
-        )
-        basis_reduction = plan.from_taxable_brokerage * basis_ratio
-    else:
-        basis_reduction = 0
-
     new_brokerage_basis = (
-        financial.taxable_brokerage_basis + plan.to_brokerage - basis_reduction
+        financial.taxable_brokerage_basis
+        + plan.to_brokerage
+        - plan.from_taxable_brokerage_basis
     )
 
     # 5. Update Cash Reserves
@@ -133,11 +125,12 @@ def apply_decisions_to_financial_state(
 
 
 def solve_withdrawal_and_tax(
+    world: WorldState,
     financial: FinancialState,
     personal: PersonalState,
     initial_plan: YearlyDecisionsPlan,
     withdrawal_strat: WithdrawalStrategy,
-    tax_strat: TaxStrategy,
+    tax_calculator: TaxCalculator,
     max_iterations: int = 15,
     tolerance: float = 1.0,
 ) -> YearlyDecisionsPlan:
@@ -150,10 +143,11 @@ def solve_withdrawal_and_tax(
 
     for i in range(max_iterations):
         # 1. Update withdrawals first (based on current tax estimate)
-        current_plan = withdrawal_strat(financial, personal, current_plan)
+        current_plan = withdrawal_strat(world, financial, personal, current_plan)
 
         # 2. Update the tax bill (based on the new withdrawals)
-        current_plan = tax_strat(financial, personal, current_plan)
+        taxes_due = tax_calculator(personal, current_plan)
+        current_plan = replace(current_plan, to_taxes=taxes_due)
 
         # 3. Check for convergence based on the updated tax bill
         current_tax_bill = current_plan.to_taxes
@@ -166,11 +160,13 @@ def solve_withdrawal_and_tax(
 
 
 def simulate_financial_year(
+    world: WorldState,
     financial: FinancialState,
     personal: PersonalState,
     market: MarketConditions,
+    regulations_factory: RegulationsFactory,
     config: YearlyDecisionsConfiguration,
-) -> Tuple[FinancialState, YearlyDecisionsPlan]:
+) -> Tuple[WorldState, FinancialState, YearlyDecisionsPlan]:
     """
     Simulates a single-year state transition from Beginning of Year (BOY)
     to End of Year (EOY).
@@ -199,19 +195,30 @@ def simulate_financial_year(
         close of the business year.
     """
     financial = apply_market(financial, market)
+    world = replace(
+        world,
+        cumulative_inflation_index=world.cumulative_inflation_index
+        * (1 + market.annual_inflation_rate),
+    )
+    regulations = regulations_factory(world)
     decisions = YearlyDecisionsPlan()
-    decisions = config.income_strat(financial, personal, decisions)
-    decisions = config.payroll_strat(financial, personal, decisions)
-    decisions = config.mortgage_strat(financial, personal, decisions)
-    decisions = config.lifestyle_spending_strat(financial, personal, decisions)
+    decisions = config.income_strat(world, financial, personal, decisions)
+    decisions = config.payroll_strat(world, financial, personal, decisions)
+    decisions = config.mortgage_strat(world, financial, personal, decisions)
+    decisions = config.lifestyle_spending_strat(world, financial, personal, decisions)
 
     decisions = solve_withdrawal_and_tax(
-        financial, personal, decisions, config.withdrawal_strat, config.tax_strat
+        world,
+        financial,
+        personal,
+        decisions,
+        config.withdrawal_strat,
+        regulations.tax_fn,
     )
-    decisions = config.savings_strat(financial, personal, decisions)
+    decisions = config.savings_strat(world, financial, personal, decisions)
 
     financial = apply_decisions_to_financial_state(financial, decisions)
 
     # 4. Final Rebalancing
-    financial = config.rebalance_strat(financial, personal)
-    return financial, decisions
+    financial = config.rebalance_strat(world, financial, personal)
+    return world, financial, decisions

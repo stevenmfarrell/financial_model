@@ -1,7 +1,8 @@
 from dataclasses import replace
-from model import (
+from models import (
     FinancialState,
     PersonalState,
+    WorldState,
     YearlyDecisionsPlan,
     MortgageStrategy,
 )
@@ -14,6 +15,7 @@ class FixedMortgage(MortgageStrategy):
 
     def __call__(
         self,
+        world: WorldState,
         financial: FinancialState,
         personal: PersonalState,
         plan: YearlyDecisionsPlan,

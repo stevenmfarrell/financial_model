@@ -1,5 +1,11 @@
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Callable, Protocol
+
+
+@dataclass(frozen=True)
+class WorldState:
+    year: int
+    cumulative_inflation_index: float = 1
 
 
 @dataclass(frozen=True)
@@ -18,9 +24,6 @@ class PersonalState:
 
 @dataclass(frozen=True)
 class FinancialState:
-    year: int
-    cumulative_inflation_index: float = 1.0
-
     taxable_brokerage_balance: float = 0.0
     taxable_brokerage_basis: float = 0.0
     taxable_brokerage_stock_allocation: float = (
@@ -106,7 +109,9 @@ class YearlyDecisionsPlan:
     from_traditional_retirement: float = 0
     from_roth_retirement: float = 0
     from_hsa: float = 0
-    from_taxable_brokerage: float = 0
+    from_taxable_brokerage_growth: float = 0
+    from_taxable_brokerage_basis: float = 0
+
     from_cash_reserve: float = 0
 
     @property
@@ -149,7 +154,8 @@ class YearlyDecisionsPlan:
             + self.other_taxable_income
             + self.from_traditional_retirement
             + self.from_roth_retirement
-            + self.from_taxable_brokerage
+            + self.from_taxable_brokerage_basis
+            + self.from_taxable_brokerage_growth
             + self.from_hsa
             + self.from_cash_reserve
         )
@@ -177,6 +183,7 @@ class YearlyDecisionsPlan:
 class YearlyDecisionStrategy(Protocol):
     def __call__(
         self,
+        world: WorldState,
         financial: FinancialState,
         personal: PersonalState,
         existing_plan: YearlyDecisionsPlan,
@@ -215,14 +222,6 @@ class LifestyleSpendingStrategy(YearlyDecisionStrategy):
     ...
 
 
-class TaxStrategy(YearlyDecisionStrategy):
-    """
-    Calculates the tax liability generated in a given year
-    """
-
-    ...
-
-
 class MortgageStrategy(YearlyDecisionStrategy):
     """
     Manage mortgage payments
@@ -232,6 +231,33 @@ class MortgageStrategy(YearlyDecisionStrategy):
 
 
 class InvestmentRebalancingStrategy(Protocol):
-    def __call__(self, financial, personal: PersonalState) -> FinancialState:
+    def __call__(
+        self, world: WorldState, financial: FinancialState, personal: PersonalState
+    ) -> FinancialState:
         """Returns a new FinancialState with rebalanced allocations according to the strategy."""
         ...
+
+
+class TaxCalculator(Protocol):
+    """
+    Calculates the tax liability generated in a given year
+    """
+
+    def __call__(
+        self,
+        personal: PersonalState,
+        existing_plan: YearlyDecisionsPlan,
+    ) -> float:
+        """Updates the YearlyDecisionsPlan based on the current state and personal info."""
+        ...
+
+
+@dataclass(frozen=True)
+class RegulatoryEnvironment:
+    annual_401k_limit: float
+    annual_hsa_limit: float
+    annual_ira_limit: float
+    tax_fn: TaxCalculator
+
+
+RegulationsFactory = Callable[[WorldState], RegulatoryEnvironment]

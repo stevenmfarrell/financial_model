@@ -1,6 +1,6 @@
 from dataclasses import replace
 
-from model import FinancialState, PersonalState
+from models import FinancialState, PersonalState, WorldState
 
 
 class ConstantAllocationRebalance:
@@ -38,7 +38,7 @@ class GlidePathRebalance:
         self.glide_end_age = glide_end_age
 
     def __call__(
-        self, financial: FinancialState, personal: PersonalState
+        self, world: WorldState, financial: FinancialState, personal: PersonalState
     ) -> FinancialState:
         if personal.age <= self.glide_start_age:
             stock_ratio = self.initial_stock_ratio

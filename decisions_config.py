@@ -1,13 +1,12 @@
 from dataclasses import dataclass
 
-from model import (
+from models import (
     IncomeStrategy,
     InvestmentRebalancingStrategy,
     LifestyleSpendingStrategy,
     MortgageStrategy,
     PayrollStrategy,
     SavingsStrategy,
-    TaxStrategy,
     WithdrawalStrategy,
 )
 
@@ -20,5 +19,4 @@ class YearlyDecisionsConfiguration:
     savings_strat: SavingsStrategy
     withdrawal_strat: WithdrawalStrategy
     lifestyle_spending_strat: LifestyleSpendingStrategy
-    tax_strat: TaxStrategy
     rebalance_strat: InvestmentRebalancingStrategy

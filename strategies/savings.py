@@ -1,7 +1,8 @@
 from dataclasses import replace
-from model import (
+from models import (
     FinancialState,
     PersonalState,
+    WorldState,
     YearlyDecisionsPlan,
     SavingsStrategy,
 )
@@ -23,6 +24,7 @@ class WaterfallSavings(SavingsStrategy):
 
     def __call__(
         self,
+        world: WorldState,
         financial: FinancialState,
         personal: PersonalState,
         plan: YearlyDecisionsPlan,

@@ -1,23 +1,20 @@
-from dataclasses import replace
 from typing import Literal
-from model import (
-    FinancialState,
-    PersonalState,
-    YearlyDecisionsPlan,
-    TaxStrategy,
-)
+from models import PersonalState, YearlyDecisionsPlan, TaxCalculator
 
 
-class USFederalIncomeTax2026(TaxStrategy):
+class USFederalIncomeTax2026(TaxCalculator):
     """
     Implements 2026 US Federal logic with inflation-indexed brackets
     and early withdrawal penalties.
     """
 
-    def __init__(self, filing_status: Literal["single", "mfj"] = "single"):
-        self.filing_status = filing_status
+    def __init__(
+        self,
+        cumulative_inflation_index: float,
+        filing_status: Literal["single", "mfj"] = "single",
+    ):
         self.standard_deduction = 16100 if filing_status == "single" else 32200
-
+        self.cumulative_inflation_index = cumulative_inflation_index
         # FICA rates and base
         self.ss_rate, self.ss_wage_base = 0.062, 184500
         self.med_rate, self.addl_med_rate = 0.0145, 0.009
@@ -47,13 +44,12 @@ class USFederalIncomeTax2026(TaxStrategy):
 
     def __call__(
         self,
-        financial: FinancialState,
         personal: PersonalState,
         plan: YearlyDecisionsPlan,
-    ) -> YearlyDecisionsPlan:
+    ) -> float:
         # 1. Inflation Adjustment
         # Scale deduction and brackets to maintain real-dollar thresholds
-        inf_factor = financial.cumulative_inflation_index
+        inf_factor = self.cumulative_inflation_index
         adj_standard_deduction = self.standard_deduction * inf_factor
 
         # 2. FICA Calculation (using nominal wages)
@@ -91,44 +87,25 @@ class USFederalIncomeTax2026(TaxStrategy):
         # 20% penalty on HSA distributions for non-medical use before age 65
         hsa_penalty = 0.20 * plan.from_hsa if personal.age < 65 else 0.0
 
-        # Return updated plan with cumulative taxes
-        return replace(
-            plan,
-            to_taxes=plan.to_taxes
-            + fica_total
-            + income_tax
-            + early_withdrawal_penalty
-            + hsa_penalty,
-        )
+        taxes = fica_total + income_tax + early_withdrawal_penalty + hsa_penalty
+        return taxes
 
 
-class BrokerageCapitalGainsTax(TaxStrategy):
+class BrokerageCapitalGainsTax(TaxCalculator):
     """Calculates tax on the 'Gain' portion of brokerage liquidations."""
 
     def __init__(self, long_term_rate: float = 0.15):
         self.rate = long_term_rate
 
-    def __call__(
-        self, financial: FinancialState, personal: PersonalState, plan
-    ) -> YearlyDecisionsPlan:
-        if plan.from_taxable_brokerage <= 0 or financial.taxable_brokerage_balance <= 0:
-            return plan
+    def __call__(self, personal: PersonalState, plan) -> float:
+        cap_gains_tax = plan.from_taxable_brokerage_growth * self.rate
 
-        # Determine how much of the withdrawal is actually a gain
-        gain_ratio = (
-            financial.taxable_brokerage_balance - financial.taxable_brokerage_basis
-        ) / financial.taxable_brokerage_balance
-        taxable_gain = plan.from_taxable_brokerage * max(0.0, gain_ratio)
-
-        cap_gains_tax = taxable_gain * self.rate
-
-        # Stack this tax on top of whatever is already there
-        return replace(plan, to_taxes=plan.to_taxes + cap_gains_tax)
+        return cap_gains_tax
 
 
-class FlatIncomeTaxStrategy(TaxStrategy):
+class FlatStateIncomeTaxStrategy(TaxCalculator):
     """
-    Applies a simple flat percentage tax to all taxable income.
+    Applies a simple flat percentage tax to all taxable income, which in the case for states includes capital gains.
     Useful for modeling state taxes (e.g., Utah's 4.65% rate).
     """
 
@@ -136,34 +113,24 @@ class FlatIncomeTaxStrategy(TaxStrategy):
         self.rate = rate
         self.label = label
 
-    def __call__(self, financial, personal, plan) -> YearlyDecisionsPlan:
+    def __call__(self, personal: PersonalState, plan: YearlyDecisionsPlan) -> float:
         # Calculate ordinary taxable income
-        taxable_base = plan.total_taxable_income
-
-        # Add capital gains from brokerage if they exist
-        if plan.from_taxable_brokerage > 0 and financial.taxable_brokerage_balance > 0:
-            gain_ratio = (
-                financial.taxable_brokerage_balance - financial.taxable_brokerage_basis
-            ) / financial.taxable_brokerage_balance
-            taxable_gain = plan.from_taxable_brokerage * max(0.0, gain_ratio)
-            taxable_base += taxable_gain
+        taxable_base = plan.total_taxable_income + plan.from_taxable_brokerage_growth
 
         tax_amount = taxable_base * self.rate
-        return replace(plan, to_taxes=plan.to_taxes + tax_amount)
+        return tax_amount
 
 
-class CombinedTaxStrategy(TaxStrategy):
+class CombinedTaxCalculator(TaxCalculator):
     """Aggregates multiple tax components (Fed, State, Gains)."""
 
-    def __init__(self, *strategies: TaxStrategy):
+    def __init__(self, *strategies: TaxCalculator):
         self.strategies = strategies
 
-    def __call__(self, state, personal, plan) -> YearlyDecisionsPlan:
-        # We reset the to_taxes to 0 before running the stack to avoid double-counting
-        # during the iterative solver loops.
-        current_plan = replace(plan, to_taxes=0.0)
+    def __call__(self, personal: PersonalState, plan: YearlyDecisionsPlan) -> float:
+        taxes = 0
 
         for strat in self.strategies:
-            current_plan = strat(state, personal, current_plan)
+            taxes += strat(personal, plan)
 
-        return current_plan
+        return taxes

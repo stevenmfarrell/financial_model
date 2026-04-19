@@ -1,7 +1,8 @@
 from dataclasses import replace
-from model import (
+from models import (
     FinancialState,
     PersonalState,
+    WorldState,
     YearlyDecisionsPlan,
     WithdrawalStrategy,
 )
@@ -15,6 +16,7 @@ class SequentialWithdrawal(WithdrawalStrategy):
 
     def __call__(
         self,
+        world: WorldState,
         financial: FinancialState,
         personal: PersonalState,
         plan: YearlyDecisionsPlan,
@@ -35,6 +37,18 @@ class SequentialWithdrawal(WithdrawalStrategy):
 
         # Priority 2: Taxable Brokerage
         from_brokerage = min(shortfall, financial.taxable_brokerage_balance)
+        from_taxable_brokerage_basis = 0.0
+        from_taxable_brokerage_growth = 0.0
+        if from_brokerage > 0 and financial.taxable_brokerage_balance > 0:
+            # Calculate what percentage of the account is basis
+            basis_ratio = (
+                financial.taxable_brokerage_basis / financial.taxable_brokerage_balance
+            )
+            from_taxable_brokerage_basis = from_brokerage * basis_ratio
+            from_taxable_brokerage_growth = (
+                from_brokerage - from_taxable_brokerage_basis
+            )
+
         shortfall -= from_brokerage
 
         # Priority 3: Traditional Retirement (Taxable)
@@ -53,7 +67,8 @@ class SequentialWithdrawal(WithdrawalStrategy):
         return replace(
             plan,
             from_cash_reserve=from_cash,
-            from_taxable_brokerage=from_brokerage,
+            from_taxable_brokerage_basis=from_taxable_brokerage_basis,
+            from_taxable_brokerage_growth=from_taxable_brokerage_growth,
             from_traditional_retirement=from_trad,
             from_roth_retirement=from_roth,
             from_hsa=from_hsa,
