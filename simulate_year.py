@@ -71,14 +71,23 @@ def apply_decisions_to_financial_state(
         + plan.match_to_trad_401k
         - plan.from_traditional_retirement
     )
+    # Update Roth Basis
+    # Note: Employer matches (match_to_roth_401k) are NOT basis.
+    # Only your payroll and direct IRA contributions count as basis.
+    new_roth_basis = (
+        financial.roth_contribution_basis
+        + plan.payroll_to_roth_401k
+        + plan.to_roth_ira
+        - plan.from_roth_retirement_basis
+    )
 
-    # 2. Update Roth Retirement Balance
     new_roth_balance = (
         financial.roth_retirement_balance
         + plan.payroll_to_roth_401k
         + plan.match_to_roth_401k
         + plan.to_roth_ira
-        - plan.from_roth_retirement
+        - plan.from_roth_retirement_basis
+        - plan.from_roth_retirement_earnings
     )
 
     # 3. Update HSA Balance
@@ -118,6 +127,7 @@ def apply_decisions_to_financial_state(
         financial,
         traditional_retirement_balance=new_trad_balance,
         roth_retirement_balance=new_roth_balance,
+        roth_contribution_basis=new_roth_basis,
         hsa_balance=new_hsa_balance,
         taxable_brokerage_balance=new_brokerage_balance,
         taxable_brokerage_basis=new_brokerage_basis,

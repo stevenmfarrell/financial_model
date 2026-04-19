@@ -52,9 +52,17 @@ class SequentialWithdrawal(WithdrawalStrategy):
         from_trad = min(shortfall, financial.traditional_retirement_balance)
         shortfall -= from_trad
 
-        # Priority 4: Roth Retirement (Tax-Free)
-        from_roth = min(shortfall, financial.roth_retirement_balance)
-        shortfall -= from_roth
+        # Priority 4: Roth Retirement
+        # Step A: Withdraw from Basis first (Tax/Penalty Free)
+        from_roth_basis = min(shortfall, financial.roth_contribution_basis)
+        shortfall -= from_roth_basis
+
+        # Step B: Withdraw from Earnings (Taxable + Penalty)
+        roth_earnings_avail = max(
+            0.0, financial.roth_retirement_balance - financial.roth_contribution_basis
+        )
+        from_roth_earnings = min(shortfall, roth_earnings_avail)
+        shortfall -= from_roth_earnings
 
         # Priority 5: HSA (Tax-Free for medical, or taxable after 65)
         from_hsa = min(shortfall, financial.hsa_balance)
@@ -67,6 +75,7 @@ class SequentialWithdrawal(WithdrawalStrategy):
             from_taxable_brokerage_basis=from_taxable_brokerage_basis,
             from_taxable_brokerage_growth=from_taxable_brokerage_growth,
             from_traditional_retirement=from_trad,
-            from_roth_retirement=from_roth,
+            from_roth_retirement_basis=from_roth_basis,
+            from_roth_retirement_earnings=from_roth_earnings,
             from_hsa=from_hsa,
         )

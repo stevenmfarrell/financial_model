@@ -40,6 +40,7 @@ class FinancialState:
         0.0  # Fraction of retirement balance in stocks
     )
     roth_retirement_balance: float = 0.0
+    roth_contribution_basis: float = 0.0  # amount directly contributed (no conversions)
     roth_retirement_stock_allocation: float = (
         0.0  # Fraction of retirement balance in stocks
     )
@@ -111,10 +112,11 @@ class YearlyDecisionsPlan:
 
     # --- Withdrawals (Decumulation) ---
     from_traditional_retirement: float = 0
-    from_roth_retirement: float = 0
     from_hsa: float = 0
     from_taxable_brokerage_growth: float = 0
     from_taxable_brokerage_basis: float = 0
+    from_roth_retirement_basis: float = 0  # Tax-free, penalty-free
+    from_roth_retirement_earnings: float = 0  # Taxable + 10% penalty if < 60
 
     from_cash_reserve: float = 0
 
@@ -122,10 +124,19 @@ class YearlyDecisionsPlan:
     def taxable_wages(self) -> float:
         """The 'fixed' portion of taxable income from payroll."""
         return (
-            (self.gross_earned_income + self.other_taxable_income)
+            (
+                self.gross_earned_income
+                + self.other_taxable_income
+                + self.match_to_roth_401k
+            )
             - self.pretax_to_trad_401k
             - self.pretax_to_hsa
         )
+
+    @property
+    def from_roth_retirement(self) -> float:
+        """The total amount pulled from Roth for cash flow balancing."""
+        return self.from_roth_retirement_basis + self.from_roth_retirement_earnings
 
     @property
     def net_salary_cash_flow(self) -> float:
