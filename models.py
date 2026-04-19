@@ -21,6 +21,8 @@ class MarketConditions:
 class PersonalState:
     age: int
     marital_status: Literal["married", "single"]
+    real_earnings_history: tuple[float, ...] = ()
+    social_security_claiming_age: int = 67
 
 
 @dataclass(frozen=True)
@@ -82,6 +84,7 @@ class FinancialState:
 class YearlyDecisionsPlan:
     # --- Inflows ---
     gross_earned_income: float = 0
+    social_security_recieved: float = 0
     other_taxable_income: float = 0  # e.g., Bonuses or 1099 work
 
     # --- Pre-Tax Payroll Deductions ---
@@ -125,15 +128,11 @@ class YearlyDecisionsPlan:
         )
 
     @property
-    def total_taxable_income(self) -> float:
-        """Includes wages plus any taxable withdrawals for the TaxStrategy to read."""
-        return self.taxable_wages + self.from_traditional_retirement
-
-    @property
     def net_salary_cash_flow(self) -> float:
         """The actual 'take-home' cash from the paycheck after all deductions and taxes."""
         return (
             self.gross_earned_income
+            + self.social_security_recieved
             + self.other_taxable_income
             - self.pretax_to_trad_401k
             - self.pretax_to_hsa
@@ -152,6 +151,7 @@ class YearlyDecisionsPlan:
     def total_inflows(self) -> float:
         return (
             self.gross_earned_income
+            + self.social_security_recieved
             + self.other_taxable_income
             + self.from_traditional_retirement
             + self.from_roth_retirement
@@ -184,11 +184,10 @@ class YearlyDecisionsPlan:
 class RegulatoryCalculator(Protocol):
     def __call__(
         self,
-        world: WorldState,
-        personal: PersonalState,
+        context: "SimulationContext",
         plan: YearlyDecisionsPlan,
     ) -> float:
-        """Calculates taxes due based on the current state and personal info."""
+        """Calculates amount based on the current state and personal info."""
         ...
 
 
@@ -198,6 +197,8 @@ class RegulatoryEnvironment:
     get_annual_hsa_limit: RegulatoryCalculator
     get_annual_ira_limit: RegulatoryCalculator
     get_taxes_due: RegulatoryCalculator
+    get_social_security_benefits: RegulatoryCalculator
+    get_taxable_income: RegulatoryCalculator
 
 
 @dataclass(frozen=True)

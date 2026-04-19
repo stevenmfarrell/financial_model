@@ -50,16 +50,22 @@ def run_simulation(
         )
 
         year_end_personal = replace(
-            year_start_personal, age=year_start_personal.age + 1
+            year_start_personal,
+            age=year_start_personal.age + 1,
+            real_earnings_history=year_start_personal.real_earnings_history
+            + (
+                decisions.gross_earned_income
+                / year_end_world.cumulative_inflation_index,
+            ),
         )
 
         # 2. Record the end-of-year state
         history.append(
             (year_end_world, year_end_personal, year_end_financial, decisions)
         )
-
         # Move to start of next year
         year_start_world = replace(year_end_world, year=year_end_world.year + 1)
         year_start_personal = year_end_personal
+        year_start_financial = year_end_financial
 
     return history

@@ -39,9 +39,7 @@ class WaterfallSavings(SavingsStrategy):
         # 3. Priority 2: Roth IRA
         to_roth_ira = min(
             surplus,
-            context.regulations.get_annual_ira_limit(
-                context.world, context.personal, plan
-            ),
+            context.regulations.get_annual_ira_limit(context, plan),
         )
         surplus -= to_roth_ira
 

@@ -13,6 +13,7 @@ from models import (
     WorldState,
     YearlyDecisionsPlan,
 )
+from strategies.income import CombinedIncome, SocialSecurityIncome
 
 
 def grow_account(
@@ -145,7 +146,7 @@ def solve_withdrawal_and_tax(
         current_plan = withdrawal_strat(context, current_plan)
 
         # 2. Update the tax bill (based on the new withdrawals)
-        taxes_due = tax_calculator(context.world, context.personal, current_plan)
+        taxes_due = tax_calculator(context, current_plan)
         current_plan = replace(current_plan, to_taxes=taxes_due)
 
         # 3. Check for convergence based on the updated tax bill
@@ -193,6 +194,7 @@ def simulate_financial_year(
         A new FinancialState object representing the user's wealth at the
         close of the business year.
     """
+
     financial = apply_market(financial, market)
     world = replace(
         world,
@@ -202,7 +204,8 @@ def simulate_financial_year(
     regulations = regulations_factory(world)
     context = SimulationContext(world, personal, financial, regulations)
     decisions = YearlyDecisionsPlan()
-    decisions = config.income_strat(context, decisions)
+    overall_income_strat = CombinedIncome(config.income_strat, SocialSecurityIncome())
+    decisions = overall_income_strat(context, decisions)
     decisions = config.payroll_strat(context, decisions)
     decisions = config.mortgage_strat(context, decisions)
     decisions = config.lifestyle_spending_strat(context, decisions)

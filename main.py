@@ -7,17 +7,20 @@ from models import (
     RegulatoryEnvironment,
 )
 from regulations.limits import (
-    irs_401k_limit_2026,
-    irs_hsa_limit_2026,
-    irs_roth_ira_limit_2026_household,
+    IRS401kLimit2026,
+    IRSHSALimit2026,
+    IRSHouseholdRothIRALimit2026,
 )
+from regulations.social_security import SocialSecurityPayout2026
 from simulation_runner import run_simulation
 
 from output import create_history_dataframe
 from regulations.tax import (
     BrokerageCapitalGainsTax,
     CombinedTaxCalculator,
+    EarlyWithdrawalPenaltyCalculator,
     FlatStateIncomeTaxStrategy,
+    TaxableIncomeCalculator2026,
     USFederalIncomeTax2026,
 )
 from strategies.mortgage import FixedMortgage
@@ -25,20 +28,23 @@ from strategies.payroll import MaximizeContributionsPayroll
 from strategies.rebalance import GlidePathRebalance
 from strategies.savings import WaterfallSavings
 from strategies.spending import InflationAdjustedSpending
-from strategies.wages import BaristaRetirementWages
+from strategies.income import BaristaRetirementWages
 from strategies.withdrawal import SequentialWithdrawal
 
 
 def regulations_factory(world: WorldState):
     regulations = RegulatoryEnvironment(
-        get_annual_401k_limit=irs_401k_limit_2026,
-        get_annual_hsa_limit=irs_hsa_limit_2026,
-        get_annual_ira_limit=irs_roth_ira_limit_2026_household,
+        get_annual_401k_limit=IRS401kLimit2026(),
+        get_annual_hsa_limit=IRSHSALimit2026(),
+        get_annual_ira_limit=IRSHouseholdRothIRALimit2026(),
         get_taxes_due=CombinedTaxCalculator(
             USFederalIncomeTax2026(),
             FlatStateIncomeTaxStrategy(0.0466),
             BrokerageCapitalGainsTax(),
+            EarlyWithdrawalPenaltyCalculator(),
         ),
+        get_social_security_benefits=SocialSecurityPayout2026(),
+        get_taxable_income=TaxableIncomeCalculator2026(),
     )
     return regulations
 
@@ -46,7 +52,21 @@ def regulations_factory(world: WorldState):
 def main():
     # 1. Initialize the user's starting states
     initial_world = WorldState(year=2026)
-    initial_personal = PersonalState(age=34, marital_status="married")
+    initial_personal = PersonalState(
+        age=34,
+        marital_status="married",
+        real_earnings_history=(
+            60000,
+            70000,
+            80000,
+            90000,
+            100000,
+            110000,
+            120000,
+            13000,
+            140000,
+        ),
+    )
     initial_financial = FinancialState(
         taxable_brokerage_balance=287000.0,
         taxable_brokerage_basis=150000.0,
@@ -86,7 +106,7 @@ def main():
             match_hsa_amount=1250,
         ),
         lifestyle_spending_strat=InflationAdjustedSpending(
-            base_spending_today_dollars=60000.0
+            base_spending_today_dollars=00000.0
         ),
         mortgage_strat=FixedMortgage(),
         savings_strat=WaterfallSavings(target_cash_reserve=20000),

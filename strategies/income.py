@@ -67,3 +67,45 @@ class BaristaRetirementWages(IncomeStrategy):
         nominal_income = real_wage * context.world.cumulative_inflation_index
 
         return replace(plan, gross_earned_income=nominal_income)
+
+
+class CombinedIncome(IncomeStrategy):
+    def __init__(self, *strats: IncomeStrategy):
+        self.strats = strats
+
+    def __call__(
+        self,
+        context: SimulationContext,
+        plan: YearlyDecisionsPlan,
+    ) -> YearlyDecisionsPlan:
+        gross_earned_income = 0
+        other_taxable_income = 0
+        social_security_recieved = 0
+        for strat in self.strats:
+            result = strat(context, plan)
+            gross_earned_income += result.gross_earned_income
+            other_taxable_income += result.other_taxable_income
+            social_security_recieved += result.social_security_recieved
+
+        return replace(
+            plan,
+            gross_earned_income=gross_earned_income,
+            social_security_recieved=social_security_recieved,
+            other_taxable_income=other_taxable_income,
+        )
+
+
+class SocialSecurityIncome(IncomeStrategy):
+    """
+    Models income recieved by Social Security
+    """
+
+    def __call__(
+        self,
+        context: SimulationContext,
+        plan: YearlyDecisionsPlan,
+    ) -> YearlyDecisionsPlan:
+        social_security_recieved = context.regulations.get_social_security_benefits(
+            context, plan
+        )
+        return replace(plan, social_security_recieved=social_security_recieved)
