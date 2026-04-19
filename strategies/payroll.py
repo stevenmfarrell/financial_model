@@ -1,8 +1,6 @@
 from dataclasses import replace
 from models import (
-    FinancialState,
-    PersonalState,
-    WorldState,
+    SimulationContext,
     YearlyDecisionsPlan,
     PayrollStrategy,
 )
@@ -30,9 +28,7 @@ class StandardPayrollStrategy(PayrollStrategy):
 
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
         # 1. Read the salary established by the IncomeStrategy

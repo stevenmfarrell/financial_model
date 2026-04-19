@@ -1,10 +1,8 @@
 from dataclasses import replace
 
 from models import (
-    FinancialState,
     LifestyleSpendingStrategy,
-    PersonalState,
-    WorldState,
+    SimulationContext,
     YearlyDecisionsPlan,
 )
 
@@ -23,10 +21,8 @@ class InflationAdjustedSpending(LifestyleSpendingStrategy):
 
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         existing_plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
-        nominal_spending = self.base_spending * world.cumulative_inflation_index
+        nominal_spending = self.base_spending * context.world.cumulative_inflation_index
         return replace(existing_plan, to_lifestyle_spending=nominal_spending)

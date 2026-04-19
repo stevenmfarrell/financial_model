@@ -1,8 +1,6 @@
 from dataclasses import replace
 from models import (
-    FinancialState,
-    PersonalState,
-    WorldState,
+    SimulationContext,
     YearlyDecisionsPlan,
     MortgageStrategy,
 )
@@ -15,12 +13,11 @@ class FixedMortgage(MortgageStrategy):
 
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
 
+        financial = context.financial
         total_owed = financial.mortgage_principal * (
             1 + financial.mortgage_interest_rate
         )

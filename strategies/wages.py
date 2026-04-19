@@ -1,8 +1,6 @@
 from dataclasses import replace
 from models import (
-    FinancialState,
-    PersonalState,
-    WorldState,
+    SimulationContext,
     YearlyDecisionsPlan,
     IncomeStrategy,
 )
@@ -20,16 +18,16 @@ class RetirementWages(IncomeStrategy):
 
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
         # Determine the real wage based on age
-        real_wage = 0.0 if personal.age >= self.retirement_age else self.initial_salary
+        real_wage = (
+            0.0 if context.personal.age >= self.retirement_age else self.initial_salary
+        )
 
         # Inflate to nominal dollars
-        nominal_income = real_wage * world.cumulative_inflation_index
+        nominal_income = real_wage * context.world.cumulative_inflation_index
 
         return replace(plan, gross_earned_income=nominal_income)
 
@@ -54,20 +52,18 @@ class BaristaRetirementWages(IncomeStrategy):
 
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
         # Step-down logic for real wages
-        if personal.age >= self.full_retirement_age:
+        if context.personal.age >= self.full_retirement_age:
             real_wage = 0.0
-        elif personal.age >= self.barista_retirement_age:
+        elif context.personal.age >= self.barista_retirement_age:
             real_wage = self.barista_salary
         else:
             real_wage = self.initial_salary
 
         # Inflate to nominal dollars
-        nominal_income = real_wage * world.cumulative_inflation_index
+        nominal_income = real_wage * context.world.cumulative_inflation_index
 
         return replace(plan, gross_earned_income=nominal_income)

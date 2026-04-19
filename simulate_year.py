@@ -6,6 +6,7 @@ from models import (
     FinancialState,
     MarketConditions,
     RegulationsFactory,
+    SimulationContext,
     TaxCalculator,
     PersonalState,
     WithdrawalStrategy,
@@ -125,9 +126,7 @@ def apply_decisions_to_financial_state(
 
 
 def solve_withdrawal_and_tax(
-    world: WorldState,
-    financial: FinancialState,
-    personal: PersonalState,
+    context: SimulationContext,
     initial_plan: YearlyDecisionsPlan,
     withdrawal_strat: WithdrawalStrategy,
     tax_calculator: TaxCalculator,
@@ -143,10 +142,10 @@ def solve_withdrawal_and_tax(
 
     for i in range(max_iterations):
         # 1. Update withdrawals first (based on current tax estimate)
-        current_plan = withdrawal_strat(world, financial, personal, current_plan)
+        current_plan = withdrawal_strat(context, current_plan)
 
         # 2. Update the tax bill (based on the new withdrawals)
-        taxes_due = tax_calculator(personal, current_plan)
+        taxes_due = tax_calculator(context.personal, current_plan)
         current_plan = replace(current_plan, to_taxes=taxes_due)
 
         # 3. Check for convergence based on the updated tax bill
@@ -201,24 +200,25 @@ def simulate_financial_year(
         * (1 + market.annual_inflation_rate),
     )
     regulations = regulations_factory(world)
+    context = SimulationContext(world, personal, financial, regulations)
     decisions = YearlyDecisionsPlan()
-    decisions = config.income_strat(world, financial, personal, decisions)
-    decisions = config.payroll_strat(world, financial, personal, decisions)
-    decisions = config.mortgage_strat(world, financial, personal, decisions)
-    decisions = config.lifestyle_spending_strat(world, financial, personal, decisions)
+    decisions = config.income_strat(context, decisions)
+    decisions = config.payroll_strat(context, decisions)
+    decisions = config.mortgage_strat(context, decisions)
+    decisions = config.lifestyle_spending_strat(context, decisions)
 
     decisions = solve_withdrawal_and_tax(
-        world,
-        financial,
-        personal,
+        context,
         decisions,
         config.withdrawal_strat,
         regulations.tax_fn,
     )
-    decisions = config.savings_strat(world, financial, personal, decisions)
+    decisions = config.savings_strat(context, decisions)
 
     financial = apply_decisions_to_financial_state(financial, decisions)
 
     # 4. Final Rebalancing
-    financial = config.rebalance_strat(world, financial, personal)
+    financial = config.rebalance_strat(
+        SimulationContext(world, personal, financial, regulations)
+    )
     return world, financial, decisions

@@ -1,8 +1,6 @@
 from dataclasses import replace
 from models import (
-    FinancialState,
-    PersonalState,
-    WorldState,
+    SimulationContext,
     YearlyDecisionsPlan,
     WithdrawalStrategy,
 )
@@ -16,11 +14,10 @@ class SequentialWithdrawal(WithdrawalStrategy):
 
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
+        financial = context.financial
         # 1. Identify how much cash we actually need to find
         # If shortfall is negative, we have a surplus and don't need to withdraw.
         shortfall = max(0.0, plan.current_cash_shortfall)

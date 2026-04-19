@@ -180,12 +180,43 @@ class YearlyDecisionsPlan:
         return abs(self.total_inflows - self.total_outflows) < 1
 
 
+class TaxCalculator(Protocol):
+    """
+    Calculates the tax liability generated in a given year
+    """
+
+    def __call__(
+        self,
+        personal: PersonalState,
+        existing_plan: YearlyDecisionsPlan,
+    ) -> float:
+        """Updates the YearlyDecisionsPlan based on the current state and personal info."""
+        ...
+
+
+@dataclass(frozen=True)
+class RegulatoryEnvironment:
+    annual_401k_limit: float
+    annual_hsa_limit: float
+    annual_ira_limit: float
+    tax_fn: TaxCalculator
+
+
+@dataclass(frozen=True)
+class SimulationContext:
+    world: WorldState
+    personal: PersonalState
+    financial: FinancialState
+    regulations: RegulatoryEnvironment
+
+
+RegulationsFactory = Callable[[WorldState], RegulatoryEnvironment]
+
+
 class YearlyDecisionStrategy(Protocol):
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         existing_plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
         """Updates the YearlyDecisionsPlan based on the current state and personal info."""
@@ -231,33 +262,6 @@ class MortgageStrategy(YearlyDecisionStrategy):
 
 
 class InvestmentRebalancingStrategy(Protocol):
-    def __call__(
-        self, world: WorldState, financial: FinancialState, personal: PersonalState
-    ) -> FinancialState:
+    def __call__(self, context: SimulationContext) -> FinancialState:
         """Returns a new FinancialState with rebalanced allocations according to the strategy."""
         ...
-
-
-class TaxCalculator(Protocol):
-    """
-    Calculates the tax liability generated in a given year
-    """
-
-    def __call__(
-        self,
-        personal: PersonalState,
-        existing_plan: YearlyDecisionsPlan,
-    ) -> float:
-        """Updates the YearlyDecisionsPlan based on the current state and personal info."""
-        ...
-
-
-@dataclass(frozen=True)
-class RegulatoryEnvironment:
-    annual_401k_limit: float
-    annual_hsa_limit: float
-    annual_ira_limit: float
-    tax_fn: TaxCalculator
-
-
-RegulationsFactory = Callable[[WorldState], RegulatoryEnvironment]

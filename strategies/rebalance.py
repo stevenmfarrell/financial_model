@@ -1,20 +1,22 @@
 from dataclasses import replace
 
-from models import FinancialState, PersonalState, WorldState
+from models import (
+    FinancialState,
+    InvestmentRebalancingStrategy,
+    SimulationContext,
+)
 
 
-class ConstantAllocationRebalance:
+class ConstantAllocationRebalance(InvestmentRebalancingStrategy):
     """Rebalances to a constant stock/bond allocation every year."""
 
     def __init__(self, target_stock_ratio: float):
         self.target_stock_ratio = target_stock_ratio
 
-    def __call__(
-        self, financial: FinancialState, personal: PersonalState
-    ) -> FinancialState:
+    def __call__(self, context: SimulationContext) -> FinancialState:
         # Simply updates the allocation percentages for the next year
         return replace(
-            financial,
+            context.financial,
             taxable_brokerage_stock_allocation=self.target_stock_ratio,
             traditional_retirement_stock_allocation=self.target_stock_ratio,
             roth_retirement_stock_allocation=self.target_stock_ratio,
@@ -22,7 +24,7 @@ class ConstantAllocationRebalance:
         )
 
 
-class GlidePathRebalance:
+class GlidePathRebalance(InvestmentRebalancingStrategy):
     """Starts with a high stock allocation and gradually reduces it as you age."""
 
     def __init__(
@@ -37,9 +39,8 @@ class GlidePathRebalance:
         self.glide_start_age = glide_start_age
         self.glide_end_age = glide_end_age
 
-    def __call__(
-        self, world: WorldState, financial: FinancialState, personal: PersonalState
-    ) -> FinancialState:
+    def __call__(self, context: SimulationContext) -> FinancialState:
+        personal = context.personal
         if personal.age <= self.glide_start_age:
             stock_ratio = self.initial_stock_ratio
         elif personal.age >= self.glide_end_age:
@@ -51,7 +52,7 @@ class GlidePathRebalance:
             ) * (self.initial_stock_ratio - self.final_stock_ratio)
 
         return replace(
-            financial,
+            context.financial,
             taxable_brokerage_stock_allocation=stock_ratio,
             traditional_retirement_stock_allocation=stock_ratio,
             roth_retirement_stock_allocation=stock_ratio,

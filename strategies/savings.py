@@ -1,8 +1,6 @@
 from dataclasses import replace
 from models import (
-    FinancialState,
-    PersonalState,
-    WorldState,
+    SimulationContext,
     YearlyDecisionsPlan,
     SavingsStrategy,
 )
@@ -24,9 +22,7 @@ class WaterfallSavings(SavingsStrategy):
 
     def __call__(
         self,
-        world: WorldState,
-        financial: FinancialState,
-        personal: PersonalState,
+        context: SimulationContext,
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
         # 1. Determine if we have a surplus (negative shortfall = extra cash)
@@ -37,7 +33,7 @@ class WaterfallSavings(SavingsStrategy):
 
         # 2. Priority 1: Cash Reserve (Fill the gap to the target)
         # We look at the 'state' to see what we already have in the bank.
-        cash_gap = max(0.0, self.target_cash_reserve - financial.cash_balance)
+        cash_gap = max(0.0, self.target_cash_reserve - context.financial.cash_balance)
         to_cash = min(surplus, cash_gap)
         surplus -= to_cash
 
