@@ -148,6 +148,7 @@ class InflationTrackingTaxableIncomeCalculator(RegulatoryCalculator):
             taxable_wages=plan.taxable_wages,
             traditional_withdrawals=plan.from_traditional_retirement,
             roth_earnings_withdrawals=plan.from_roth_retirement_earnings,
+            hsa_non_medical_withdrawals=plan.from_hsa_nonmedical,
             age=context.personal.age,
             ss_received=plan.social_security_recieved,
             ss_base_threshold=self.ss_base_threshold * inf,
@@ -164,7 +165,7 @@ class EarlyWithdrawalPenaltyCalculator(RegulatoryCalculator):
     def __call__(self, context: SimulationContext, plan: YearlyDecisionsPlan) -> float:
         return calculate_early_withdrawal_penalty_kernel(
             traditional_withdrawals=plan.from_traditional_retirement,
-            hsa_withdrawals=plan.from_hsa,
+            hsa_non_medical_withdrawals=plan.from_hsa_nonmedical,
             roth_earnings_withdrawals=plan.from_roth_retirement_earnings,
             age=context.personal.age,
         )

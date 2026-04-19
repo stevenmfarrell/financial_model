@@ -112,7 +112,7 @@ class YearlyDecisionsPlan:
 
     # --- Withdrawals (Decumulation) ---
     from_traditional_retirement: float = 0
-    from_hsa: float = 0
+    from_hsa_nonmedical: float = 0
     from_taxable_brokerage_growth: float = 0
     from_taxable_brokerage_basis: float = 0
     from_roth_retirement_basis: float = 0  # Tax-free, penalty-free
@@ -168,7 +168,7 @@ class YearlyDecisionsPlan:
             + self.from_roth_retirement
             + self.from_taxable_brokerage_basis
             + self.from_taxable_brokerage_growth
-            + self.from_hsa
+            + self.from_hsa_nonmedical
             + self.from_cash_reserve
         )
 

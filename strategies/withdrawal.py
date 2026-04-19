@@ -65,8 +65,8 @@ class SequentialWithdrawal(WithdrawalStrategy):
         shortfall -= from_roth_earnings
 
         # Priority 5: HSA (Tax-Free for medical, or taxable after 65)
-        from_hsa = min(shortfall, financial.hsa_balance)
-        shortfall -= from_hsa
+        from_hsa_nonmedical = min(shortfall, financial.hsa_balance)
+        shortfall -= from_hsa_nonmedical
 
         # 3. Update the Plan
         return replace(
@@ -77,5 +77,5 @@ class SequentialWithdrawal(WithdrawalStrategy):
             from_traditional_retirement=from_trad,
             from_roth_retirement_basis=from_roth_basis,
             from_roth_retirement_earnings=from_roth_earnings,
-            from_hsa=from_hsa,
+            from_hsa_nonmedical=from_hsa_nonmedical,
         )

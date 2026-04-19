@@ -92,7 +92,10 @@ def apply_decisions_to_financial_state(
 
     # 3. Update HSA Balance
     new_hsa_balance = (
-        financial.hsa_balance + plan.pretax_to_hsa + plan.match_to_hsa - plan.from_hsa
+        financial.hsa_balance
+        + plan.pretax_to_hsa
+        + plan.match_to_hsa
+        - plan.from_hsa_nonmedical
     )
 
     # 4. Update Taxable Brokerage and Basis

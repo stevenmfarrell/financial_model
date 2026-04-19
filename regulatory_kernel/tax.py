@@ -2,6 +2,7 @@ def calculate_taxable_income_kernel(
     taxable_wages: float,
     traditional_withdrawals: float,
     roth_earnings_withdrawals: float,
+    hsa_non_medical_withdrawals: float,
     age: int,
     ss_received: float,
     ss_base_threshold: float,
@@ -14,7 +15,12 @@ def calculate_taxable_income_kernel(
     """
     # 1. Base Ordinary Income
     taxable_roth = roth_earnings_withdrawals if age < 60 else 0.0
-    base_taxable = taxable_wages + traditional_withdrawals + taxable_roth
+    base_taxable = (
+        taxable_wages
+        + traditional_withdrawals
+        + taxable_roth
+        + hsa_non_medical_withdrawals
+    )
 
     if ss_received <= 0:
         return base_taxable
@@ -94,7 +100,7 @@ def calculate_federal_tax_kernel(
 
 def calculate_early_withdrawal_penalty_kernel(
     traditional_withdrawals: float,
-    hsa_withdrawals: float,
+    hsa_non_medical_withdrawals: float,
     roth_earnings_withdrawals: float,  # NEW
     age: int,
 ) -> float:
@@ -105,6 +111,6 @@ def calculate_early_withdrawal_penalty_kernel(
     roth_penalty = roth_earnings_withdrawals * 0.10 if age < 60 else 0.0
 
     # 20% penalty on HSA distributions for non-medical use before 65
-    hsa_penalty = hsa_withdrawals * 0.20 if age < 65 else 0.0
+    hsa_penalty = hsa_non_medical_withdrawals * 0.20 if age < 65 else 0.0
 
     return trad_penalty + roth_penalty + hsa_penalty
