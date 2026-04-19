@@ -1,0 +1,15 @@
+- Target cash
+- Roth taxes when early withdrawn? Basis vs gains?
+- Social Security basic vs smart
+- separate regulatory framework (taxes, contribution limits, etc) from genuine personal strategies
+- half of market growth happens before, half after?
+- required minimum distributions
+- Ladder rollover strategies
+- glide path rebalance should have different strategies for taxable/nontaxable
+- break when failing to resolve?
+- handle multiple mortgages (key value?)
+- handle multiple people, distinct social security
+- not all things are tracking with inflation
+- show csv in real dollars
+- monte carlo market conditions
+- dashboards 
