@@ -111,7 +111,8 @@ def main():
         cash_balance=20000.0,
         traditional_retirement_balance=455000.0 * 0.65,
         traditional_retirement_stock_allocation=0.9,
-        roth_retirement_balance=185000.0 + 455000.0 * 0.35,
+        roth_retirement_balance=(185000.0 + 455000.0 * 0.35),
+        roth_contribution_basis=(185000.0 + 455000.0 * 0.35) * 0.5,
         roth_retirement_stock_allocation=1.0,
         hsa_balance=40000.0,
         hsa_stock_allocation=1.0,
@@ -143,7 +144,7 @@ def main():
             match_hsa_amount=1250,
         ),
         lifestyle_spending_strat=InflationAdjustedSpending(
-            base_spending_today_dollars=00000.0
+            base_spending_today_dollars=60000.0
         ),
         mortgage_strat=FixedMortgage(),
         savings_strat=WaterfallSavings(target_cash_reserve=20000),
