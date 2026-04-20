@@ -3,6 +3,7 @@ def calculate_taxable_income_kernel(
     traditional_withdrawals: float,
     roth_earnings_withdrawals: float,
     hsa_non_medical_withdrawals: float,
+    trad_to_roth_conversion: float,
     age: int,
     ss_received: float,
     ss_base_threshold: float,
@@ -20,6 +21,7 @@ def calculate_taxable_income_kernel(
         + traditional_withdrawals
         + taxable_roth
         + hsa_non_medical_withdrawals
+        + trad_to_roth_conversion
     )
 
     if ss_received <= 0:

@@ -23,6 +23,7 @@ from regulations.tax import (
     InflationTrackingFederalTaxCalculator,
     InflationTrackingTaxableIncomeCalculator,
 )
+from strategies.conversion import FillTaxBracketConversion
 from strategies.mortgage import FixedMortgage
 from strategies.payroll import MaximizeContributionsPayroll
 from strategies.rebalance import GlidePathRebalance
@@ -82,6 +83,9 @@ def regulations_factory(world: WorldState):
             ss_upper_threshold=44000.0,
             ss_middle_tier_cap=6000.0,
         ),
+        get_federal_bracket_limit=lambda x, y: (
+            100800
+        ),  # TODO actually implement this sort of function
     )
     return regulations
 
@@ -112,7 +116,7 @@ def main():
         traditional_retirement_balance=455000.0 * 0.65,
         traditional_retirement_stock_allocation=0.9,
         roth_retirement_balance=(185000.0 + 455000.0 * 0.35),
-        roth_contribution_basis=(185000.0 + 455000.0 * 0.35) * 0.5,
+        roth_basis=(185000.0 + 455000.0 * 0.35) * 0.5,
         roth_retirement_stock_allocation=1.0,
         hsa_balance=40000.0,
         hsa_stock_allocation=1.0,
@@ -147,6 +151,7 @@ def main():
             base_spending_today_dollars=60000.0
         ),
         mortgage_strat=FixedMortgage(),
+        conversion_strat=FillTaxBracketConversion(0.12),
         savings_strat=WaterfallSavings(target_cash_reserve=20000),
         withdrawal_strat=SequentialWithdrawal(),
         rebalance_strat=GlidePathRebalance(),

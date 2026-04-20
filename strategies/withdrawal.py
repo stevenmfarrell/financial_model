@@ -90,8 +90,7 @@ class SequentialWithdrawal(WithdrawalStrategy):
         )
 
     def _withdraw_roth_basis(self, shortfall: float, financial: FinancialState):
-        # Implementation assumes the new roth_contribution_basis field exists
-        amount = min(shortfall, financial.roth_contribution_basis)
+        amount = min(shortfall, financial.roth_basis)
         return amount, shortfall - amount, {"from_roth_retirement_basis": amount}
 
     def _withdraw_trad(self, shortfall: float, financial: FinancialState):
@@ -101,7 +100,7 @@ class SequentialWithdrawal(WithdrawalStrategy):
     def _withdraw_roth_earnings(self, shortfall: float, financial: FinancialState):
         # Balance minus basis = earnings
         earnings_avail = max(
-            0.0, financial.roth_retirement_balance - financial.roth_contribution_basis
+            0.0, financial.roth_retirement_balance - financial.roth_basis
         )
         amount = min(shortfall, earnings_avail)
         return amount, shortfall - amount, {"from_roth_retirement_earnings": amount}

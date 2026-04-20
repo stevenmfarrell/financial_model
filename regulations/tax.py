@@ -143,12 +143,12 @@ class InflationTrackingTaxableIncomeCalculator(RegulatoryCalculator):
     def __call__(self, context: SimulationContext, plan: YearlyDecisionsPlan) -> float:
         inf = context.world.cumulative_inflation_index
 
-        # Delegate logic to the kernel using inflated thresholds
         return calculate_taxable_income_kernel(
             taxable_wages=plan.taxable_wages,
             traditional_withdrawals=plan.from_traditional_retirement,
             roth_earnings_withdrawals=plan.from_roth_retirement_earnings,
             hsa_non_medical_withdrawals=plan.from_hsa_nonmedical,
+            trad_to_roth_conversion=plan.trad_to_roth_conversion,
             age=context.personal.age,
             ss_received=plan.social_security_recieved,
             ss_base_threshold=self.ss_base_threshold * inf,

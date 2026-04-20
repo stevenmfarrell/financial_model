@@ -56,8 +56,32 @@ def apply_market(financial: FinancialState, market: MarketConditions) -> Financi
     )
 
 
+def perform_roth_maintenance(
+    financial: FinancialState, world: WorldState
+) -> FinancialState:
+    """
+    Moves aging Roth conversions from 'recent' to settled basis.
+    Called at BOY before any tax or withdrawal calculations.
+    """
+    settled_basis = financial.roth_basis
+    active_recent = []
+
+    for conv_year, amount in financial.roth_conversion_recent:
+        # A conversion is settled if it was made 5+ years ago
+        if (world.year - conv_year) >= 5:
+            settled_basis += amount
+        else:
+            active_recent.append((conv_year, amount))
+
+    return replace(
+        financial,
+        roth_basis=settled_basis,
+        roth_conversion_recent=tuple(active_recent),
+    )
+
+
 def apply_decisions_to_financial_state(
-    financial: FinancialState, plan: YearlyDecisionsPlan
+    world: WorldState, financial: FinancialState, plan: YearlyDecisionsPlan
 ) -> FinancialState:
     """
     Applies the transactions from the annual plan to the persistent
@@ -70,24 +94,40 @@ def apply_decisions_to_financial_state(
         + plan.pretax_to_trad_401k
         + plan.match_to_trad_401k
         - plan.from_traditional_retirement
+        - plan.trad_to_roth_conversion
     )
     # Update Roth Basis
-    # Note: Employer matches (match_to_roth_401k) are NOT basis.
-    # Only your payroll and direct IRA contributions count as basis.
     new_roth_basis = (
-        financial.roth_contribution_basis
+        financial.roth_basis
         + plan.payroll_to_roth_401k
         + plan.to_roth_ira
         - plan.from_roth_retirement_basis
     )
 
+    # Update Conversion Queue (FIFO Withdrawal + New Conversion)
+    queue = list(financial.roth_conversion_recent)
+    to_remove = plan.from_roth_conversion_penalized
+    while to_remove > 0 and queue:
+        yr, amt = queue[0]
+        if amt <= to_remove:
+            to_remove -= amt
+            queue.pop(0)
+        else:
+            queue[0] = (yr, amt - to_remove)
+            to_remove = 0
+
+    if plan.trad_to_roth_conversion > 0:
+        queue.append((world.year, plan.trad_to_roth_conversion))
+
+    new_roth_conversion_recent = queue
+
     new_roth_balance = (
         financial.roth_retirement_balance
         + plan.payroll_to_roth_401k
-        + plan.match_to_roth_401k
+        + plan.match_to_roth_401k  # not basis
         + plan.to_roth_ira
-        - plan.from_roth_retirement_basis
-        - plan.from_roth_retirement_earnings
+        + plan.trad_to_roth_conversion
+        - plan.from_roth_retirement
     )
 
     # 3. Update HSA Balance
@@ -130,7 +170,8 @@ def apply_decisions_to_financial_state(
         financial,
         traditional_retirement_balance=new_trad_balance,
         roth_retirement_balance=new_roth_balance,
-        roth_contribution_basis=new_roth_basis,
+        roth_basis=new_roth_basis,
+        roth_conversion_recent=new_roth_conversion_recent,
         hsa_balance=new_hsa_balance,
         taxable_brokerage_balance=new_brokerage_balance,
         taxable_brokerage_basis=new_brokerage_basis,
@@ -214,6 +255,10 @@ def simulate_financial_year(
         cumulative_inflation_index=world.cumulative_inflation_index
         * (1 + market.annual_inflation_rate),
     )
+
+    # Ensure our 'roth_basis' accurately reflects conversions settled for THIS year.
+    financial = perform_roth_maintenance(financial, world)
+
     regulations = regulations_factory(world)
     context = SimulationContext(world, personal, financial, regulations)
     decisions = YearlyDecisionsPlan()
@@ -222,7 +267,7 @@ def simulate_financial_year(
     decisions = config.payroll_strat(context, decisions)
     decisions = config.mortgage_strat(context, decisions)
     decisions = config.lifestyle_spending_strat(context, decisions)
-
+    decisions = config.conversion_strat(context, decisions)
     decisions = solve_withdrawal_and_tax(
         context,
         decisions,
@@ -231,7 +276,7 @@ def simulate_financial_year(
     )
     decisions = config.savings_strat(context, decisions)
 
-    financial = apply_decisions_to_financial_state(financial, decisions)
+    financial = apply_decisions_to_financial_state(world, financial, decisions)
 
     # 4. Final Rebalancing
     financial = config.rebalance_strat(

@@ -6,6 +6,7 @@ from models import (
     LifestyleSpendingStrategy,
     MortgageStrategy,
     PayrollStrategy,
+    RothConversionStrategy,
     SavingsStrategy,
     WithdrawalStrategy,
 )
@@ -16,6 +17,7 @@ class YearlyDecisionsConfiguration:
     income_strat: IncomeStrategy
     payroll_strat: PayrollStrategy
     mortgage_strat: MortgageStrategy
+    conversion_strat: RothConversionStrategy
     savings_strat: SavingsStrategy
     withdrawal_strat: WithdrawalStrategy
     lifestyle_spending_strat: LifestyleSpendingStrategy

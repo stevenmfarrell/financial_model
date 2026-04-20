@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Literal, Protocol
+from typing import Callable, Literal, Protocol, Tuple
 
 
 @dataclass(frozen=True)
@@ -40,7 +40,11 @@ class FinancialState:
         0.0  # Fraction of retirement balance in stocks
     )
     roth_retirement_balance: float = 0.0
-    roth_contribution_basis: float = 0.0  # amount directly contributed (no conversions)
+    roth_basis: float = 0.0  # amount directly contributed or converted funds that have passed the required settling period
+
+    roth_conversion_recent: Tuple[
+        Tuple[int, float], ...
+    ] = ()  # (year, amount) tuples, like ((2025, 30000), (2026, 35000))
     roth_retirement_stock_allocation: float = (
         0.0  # Fraction of retirement balance in stocks
     )
@@ -116,9 +120,12 @@ class YearlyDecisionsPlan:
     from_taxable_brokerage_growth: float = 0
     from_taxable_brokerage_basis: float = 0
     from_roth_retirement_basis: float = 0  # Tax-free, penalty-free
+    from_roth_conversion_penalized: float = 0  # No tax, 10% penalty
     from_roth_retirement_earnings: float = 0  # Taxable + 10% penalty if < 60
-
     from_cash_reserve: float = 0
+
+    # --- Conversions ---
+    trad_to_roth_conversion: float = 0
 
     @property
     def taxable_wages(self) -> float:
@@ -136,7 +143,11 @@ class YearlyDecisionsPlan:
     @property
     def from_roth_retirement(self) -> float:
         """The total amount pulled from Roth for cash flow balancing."""
-        return self.from_roth_retirement_basis + self.from_roth_retirement_earnings
+        return (
+            self.from_roth_retirement_basis
+            + self.from_roth_retirement_earnings
+            + self.from_roth_conversion_penalized
+        )
 
     @property
     def net_salary_cash_flow(self) -> float:
@@ -170,6 +181,7 @@ class YearlyDecisionsPlan:
             + self.from_taxable_brokerage_growth
             + self.from_hsa_nonmedical
             + self.from_cash_reserve
+            + self.trad_to_roth_conversion
         )
 
     @property
@@ -184,6 +196,7 @@ class YearlyDecisionsPlan:
             + self.to_roth_ira
             + self.to_brokerage
             + self.to_cash_reserve
+            + self.trad_to_roth_conversion
         )
 
     @property
@@ -210,6 +223,7 @@ class RegulatoryEnvironment:
     get_taxes_due: RegulatoryCalculator
     get_social_security_benefits: RegulatoryCalculator
     get_taxable_income: RegulatoryCalculator
+    get_federal_bracket_limit: Callable[[float, str], float]
 
 
 @dataclass(frozen=True)
@@ -241,6 +255,12 @@ class SavingsStrategy(YearlyDecisionStrategy):
 
 class WithdrawalStrategy(YearlyDecisionStrategy):
     """Returns a plan for how to meet the shortfall by withdrawing from different buckets."""
+
+    ...
+
+
+class RothConversionStrategy(YearlyDecisionStrategy):
+    """Returns a plan for how much traditional retirement savings to convert into Roth"""
 
     ...
 
