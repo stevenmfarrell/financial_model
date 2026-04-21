@@ -213,14 +213,14 @@ def solve_withdrawal_and_tax(
     return current_plan
 
 
-def simulate_financial_year(
+def simulate_year(
     world: WorldState,
     financial: FinancialState,
     personal: PersonalState,
     market: MarketConditions,
     regulations_factory: RegulationsFactory,
     config: YearlyDecisionsConfiguration,
-) -> Tuple[WorldState, FinancialState, YearlyDecisionsPlan]:
+) -> Tuple[WorldState, FinancialState, PersonalState, YearlyDecisionsPlan]:
     """
     Simulates a single-year state transition from Beginning of Year (BOY)
     to End of Year (EOY).
@@ -282,4 +282,13 @@ def simulate_financial_year(
     financial = config.rebalance_strat(
         SimulationContext(world, personal, financial, regulations)
     )
-    return world, financial, decisions
+
+    # Person will have incremented in age during the year
+    personal = replace(
+        personal,
+        age=personal.age + 1,
+        real_earnings_history=personal.real_earnings_history
+        + (decisions.gross_earned_income / world.cumulative_inflation_index,),
+    )
+
+    return world, financial, personal, decisions

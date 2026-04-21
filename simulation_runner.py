@@ -1,17 +1,22 @@
 # financial_model/runner.py
 
-from typing import List, Union
+from typing import List
 from dataclasses import replace
 from decisions_config import YearlyDecisionsConfiguration
 from models import (
     FinancialState,
-    PersonalState,
     MarketConditions,
+    MarketConditionsProvider,
+    PersonalState,
     RegulationsFactory,
     WorldState,
     YearlyDecisionsPlan,
 )
-from simulate_year import simulate_financial_year
+from simulate_year import simulate_year
+
+SimulationOutputRecord = tuple[
+    WorldState, PersonalState, MarketConditions, FinancialState, YearlyDecisionsPlan
+]
 
 
 def run_simulation(
@@ -19,49 +24,39 @@ def run_simulation(
     initial_world: WorldState,
     initial_financial: FinancialState,
     initial_personal: PersonalState,
-    market_input: Union[MarketConditions, List[MarketConditions]],
+    market_conditions_provider: MarketConditionsProvider,
     regulations_factory: RegulationsFactory,
     config: YearlyDecisionsConfiguration,
-) -> List[tuple[WorldState, PersonalState, FinancialState, YearlyDecisionsPlan]]:
+    random_seed: int | None = None,
+) -> List[SimulationOutputRecord]:
     """
     Runs the simulation for X years and returns a history of the states.
     """
-    history = []
+    history: List[SimulationOutputRecord] = []
     year_start_financial = initial_financial
     year_start_personal = initial_personal
     year_start_world = initial_world
 
+    market_conditions_list = market_conditions_provider(years, random_seed)
+
     for i in range(years):
-        # Determine market conditions for this specific year
-        if isinstance(market_input, list):
-            # Ensure we don't run out of market data
-            market = market_input[i % len(market_input)]
-        else:
-            market = market_input
+        market = market_conditions_list[i]
 
         # 1. Simulate the year
-        year_end_world, year_end_financial, decisions = simulate_financial_year(
-            world=year_start_world,
-            financial=year_start_financial,
-            personal=year_start_personal,
-            market=market,
-            regulations_factory=regulations_factory,
-            config=config,
-        )
-
-        year_end_personal = replace(
-            year_start_personal,
-            age=year_start_personal.age + 1,
-            real_earnings_history=year_start_personal.real_earnings_history
-            + (
-                decisions.gross_earned_income
-                / year_end_world.cumulative_inflation_index,
-            ),
+        year_end_world, year_end_financial, year_end_personal, decisions = (
+            simulate_year(
+                world=year_start_world,
+                financial=year_start_financial,
+                personal=year_start_personal,
+                market=market,
+                regulations_factory=regulations_factory,
+                config=config,
+            )
         )
 
         # 2. Record the end-of-year state
         history.append(
-            (year_end_world, year_end_personal, year_end_financial, decisions)
+            (year_end_world, year_end_personal, market, year_end_financial, decisions)
         )
         # Move to start of next year
         year_start_world = replace(year_end_world, year=year_end_world.year + 1)

@@ -3,11 +3,11 @@ from typing import Any, List
 from models import FinancialState, PersonalState, WorldState, YearlyDecisionsPlan
 from dataclasses import fields
 
+from simulation_runner import SimulationOutputRecord
+
 
 def create_history_dataframe(
-    history: List[
-        tuple[WorldState, PersonalState, FinancialState, YearlyDecisionsPlan]
-    ],
+    history: List[SimulationOutputRecord],
 ) -> pd.DataFrame:
     """
     Converts a simulation history into a pandas DataFrame for analysis.
@@ -15,7 +15,7 @@ def create_history_dataframe(
     """
     rows = []
 
-    for world, personal, state, decisions in history:
+    for world, personal, market, financial, decisions in history:
         row = {}
 
         # Helper to extract both fields and @property values
@@ -34,14 +34,15 @@ def create_history_dataframe(
                 if isinstance(value, property)
             ]
             for prop in props:
-                data[f"{prefix}_{prop}"] = getattr(obj, prop)
+                data[f"{prefix}{prop}"] = getattr(obj, prop)
 
             return data
 
         # Combine all snapshots into one flat row
         row.update(extract_data(world, ""))
         row.update(extract_data(personal, ""))
-        row.update(extract_data(state, "state_"))
+        row.update(extract_data(market, "mkt_"))
+        row.update(extract_data(financial, "state_"))
         row.update(extract_data(decisions, "decisions_"))
 
         rows.append(row)

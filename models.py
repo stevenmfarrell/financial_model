@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable, Literal, Protocol, Tuple
+from typing import Callable, Literal, Optional, Protocol, Tuple
 
 
 @dataclass(frozen=True)
@@ -215,14 +215,21 @@ class RegulatoryCalculator(Protocol):
         ...
 
 
-@dataclass(frozen=True)
-class RegulatoryEnvironment:
+class RegulatoryEnvironment(Protocol):
+    """
+    An interface defining all the legal and tax rules
+    the simulation must respect.
+    """
+
     get_annual_401k_limit: RegulatoryCalculator
     get_annual_hsa_limit: RegulatoryCalculator
     get_annual_ira_limit: RegulatoryCalculator
     get_taxes_due: RegulatoryCalculator
     get_social_security_benefits: RegulatoryCalculator
     get_taxable_income: RegulatoryCalculator
+
+    # Per our previous discussion, update this to be a Protocol/Callable too
+    # get_federal_bracket_limit: Callable[["SimulationContext", float], float]
     get_federal_bracket_limit: Callable[[float, str], float]
 
 
@@ -234,7 +241,10 @@ class SimulationContext:
     regulations: RegulatoryEnvironment
 
 
-RegulationsFactory = Callable[[WorldState], RegulatoryEnvironment]
+class RegulationsFactory(Protocol):
+    def __call__(self, world: WorldState) -> RegulatoryEnvironment:
+        """Function returns a RegulatoryEnvironment given the current WorldState, to allow you to simulate changing tax laws by year"""
+        ...
 
 
 class YearlyDecisionStrategy(Protocol):
@@ -294,4 +304,16 @@ class MortgageStrategy(YearlyDecisionStrategy):
 class InvestmentRebalancingStrategy(Protocol):
     def __call__(self, context: SimulationContext) -> FinancialState:
         """Returns a new FinancialState with rebalanced allocations according to the strategy."""
+        ...
+
+
+class MarketConditionsProvider(Protocol):
+    """
+    Interface for generating sequences of market conditions for a simulation.
+    """
+
+    def __call__(
+        self, num_years: int, seed: Optional[int] = None
+    ) -> list[MarketConditions]:
+        """Outputs a sequence of market conditions for the specified duration."""
         ...
