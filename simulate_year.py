@@ -6,12 +6,15 @@ from models import (
     FinancialState,
     MarketConditions,
     RegulationsFactory,
+    RegulatoryEnvironment,
+    RothConversionStrategy,
     SimulationContext,
     RegulatoryCalculator,
     PersonalState,
     WithdrawalStrategy,
     WorldState,
     YearlyDecisionsPlan,
+    YearlyMetrics,
 )
 from strategies.income import CombinedIncome, SocialSecurityIncome
 
@@ -184,6 +187,7 @@ def solve_withdrawal_and_tax(
     context: SimulationContext,
     initial_plan: YearlyDecisionsPlan,
     withdrawal_strat: WithdrawalStrategy,
+    conversion_strat: RothConversionStrategy,
     tax_calculator: RegulatoryCalculator,
     max_iterations: int = 15,
     tolerance: float = 1.0,
@@ -196,10 +200,8 @@ def solve_withdrawal_and_tax(
     last_tax_bill = initial_plan.to_taxes
 
     for i in range(max_iterations):
-        # 1. Update withdrawals first (based on current tax estimate)
+        current_plan = conversion_strat(context, current_plan)
         current_plan = withdrawal_strat(context, current_plan)
-
-        # 2. Update the tax bill (based on the new withdrawals)
         taxes_due = tax_calculator(context, current_plan)
         current_plan = replace(current_plan, to_taxes=taxes_due)
 
@@ -213,6 +215,18 @@ def solve_withdrawal_and_tax(
     return current_plan
 
 
+def get_yearly_metrics(
+    context: SimulationContext, plan: YearlyDecisionsPlan
+) -> YearlyMetrics:
+    taxable_income = context.regulations.get_taxable_income(context, plan)
+    total_tax = plan.to_taxes
+    metrics = YearlyMetrics(
+        taxable_income=taxable_income,
+        effective_tax_rate=total_tax / taxable_income if taxable_income > 0 else 0,
+    )
+    return metrics
+
+
 def simulate_year(
     world: WorldState,
     financial: FinancialState,
@@ -220,7 +234,9 @@ def simulate_year(
     market: MarketConditions,
     regulations_factory: RegulationsFactory,
     config: YearlyDecisionsConfiguration,
-) -> Tuple[WorldState, FinancialState, PersonalState, YearlyDecisionsPlan]:
+) -> Tuple[
+    WorldState, FinancialState, PersonalState, YearlyMetrics, YearlyDecisionsPlan
+]:
     """
     Simulates a single-year state transition from Beginning of Year (BOY)
     to End of Year (EOY).
@@ -267,11 +283,11 @@ def simulate_year(
     decisions = config.payroll_strat(context, decisions)
     decisions = config.mortgage_strat(context, decisions)
     decisions = config.lifestyle_spending_strat(context, decisions)
-    decisions = config.conversion_strat(context, decisions)
     decisions = solve_withdrawal_and_tax(
         context,
         decisions,
         config.withdrawal_strat,
+        config.conversion_strat,
         regulations.get_taxes_due,
     )
     decisions = config.savings_strat(context, decisions)
@@ -291,4 +307,8 @@ def simulate_year(
         + (decisions.gross_earned_income / world.cumulative_inflation_index,),
     )
 
-    return world, financial, personal, decisions
+    metrics = get_yearly_metrics(
+        SimulationContext(world, personal, financial, regulations), decisions
+    )
+
+    return world, financial, personal, metrics, decisions

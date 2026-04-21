@@ -11,11 +11,17 @@ from models import (
     RegulationsFactory,
     WorldState,
     YearlyDecisionsPlan,
+    YearlyMetrics,
 )
 from simulate_year import simulate_year
 
 SimulationOutputRecord = tuple[
-    WorldState, PersonalState, MarketConditions, FinancialState, YearlyDecisionsPlan
+    WorldState,
+    PersonalState,
+    MarketConditions,
+    FinancialState,
+    YearlyMetrics,
+    YearlyDecisionsPlan,
 ]
 
 
@@ -43,7 +49,7 @@ def run_simulation(
         market = market_conditions_list[i]
 
         # 1. Simulate the year
-        year_end_world, year_end_financial, year_end_personal, decisions = (
+        year_end_world, year_end_financial, year_end_personal, metrics, decisions = (
             simulate_year(
                 world=year_start_world,
                 financial=year_start_financial,
@@ -56,7 +62,14 @@ def run_simulation(
 
         # 2. Record the end-of-year state
         history.append(
-            (year_end_world, year_end_personal, market, year_end_financial, decisions)
+            (
+                year_end_world,
+                year_end_personal,
+                market,
+                year_end_financial,
+                metrics,
+                decisions,
+            )
         )
         # Move to start of next year
         year_start_world = replace(year_end_world, year=year_end_world.year + 1)

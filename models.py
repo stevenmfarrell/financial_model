@@ -205,6 +205,12 @@ class YearlyDecisionsPlan:
         return abs(self.total_inflows - self.total_outflows) < 1
 
 
+@dataclass(frozen=True)
+class YearlyMetrics:
+    taxable_income: float
+    effective_tax_rate: float
+
+
 class RegulatoryCalculator(Protocol):
     def __call__(
         self,
@@ -229,8 +235,7 @@ class RegulatoryEnvironment(Protocol):
     get_taxable_income: RegulatoryCalculator
 
     # Per our previous discussion, update this to be a Protocol/Callable too
-    # get_federal_bracket_limit: Callable[["SimulationContext", float], float]
-    get_federal_bracket_limit: Callable[[float, str], float]
+    get_federal_bracket_limit: Callable[["SimulationContext", float], float]
 
 
 @dataclass(frozen=True)

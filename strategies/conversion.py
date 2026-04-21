@@ -22,9 +22,7 @@ class FillTaxBracketConversion(RothConversionStrategy):
 
         # 2. Find the dollar limit for the top of our target bracket
         # e.g., for 'married', the 12% bracket might end at $100,800 * inflation
-        bracket_limit = regs.get_federal_bracket_limit(
-            self.target_rate, context.personal.marital_status
-        )
+        bracket_limit = regs.get_federal_bracket_limit(context, self.target_rate)
 
         # 3. Calculate headroom
         headroom = max(0.0, bracket_limit - current_taxable)

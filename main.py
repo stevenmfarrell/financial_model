@@ -33,6 +33,33 @@ from strategies.spending import InflationAdjustedSpending
 from strategies.income import BaristaRetirementWages
 from strategies.withdrawal import SequentialWithdrawal
 
+federal_taxes_calc = InflationTrackingFederalTaxCalculator(
+    std_deduction_married=32200.0,
+    std_deduction_single=16100.0,
+    brackets_married=[
+        (24800, 0.10),
+        (100800, 0.12),
+        (211400, 0.22),
+        (403550, 0.24),
+        (512450, 0.32),
+        (768700, 0.35),
+        (float("inf"), 0.37),
+    ],
+    brackets_single=[
+        (12400, 0.10),
+        (50400, 0.12),
+        (105700, 0.22),
+        (201775, 0.24),
+        (256225, 0.32),
+        (640600, 0.35),
+        (float("inf"), 0.37),
+    ],
+    ss_wage_base=184500.0,
+    med_threshold_married=250000.0,
+    med_threshold_single=200000.0,
+    fica_rates=(0.062, 0.0145, 0.009),
+)
+
 
 class StandardUSRegulations(RegulatoryEnvironment):
     get_annual_401k_limit = InflationTracking401kLimit(
@@ -45,32 +72,7 @@ class StandardUSRegulations(RegulatoryEnvironment):
         base_limit=7000.0, catchup_amt=1000.0
     )
     get_taxes_due = CombinedTaxCalculator(
-        InflationTrackingFederalTaxCalculator(
-            std_deduction_married=32200.0,
-            std_deduction_single=16100.0,
-            brackets_married=[
-                (24800, 0.10),
-                (100800, 0.12),
-                (211400, 0.22),
-                (403550, 0.24),
-                (512450, 0.32),
-                (768700, 0.35),
-                (float("inf"), 0.37),
-            ],
-            brackets_single=[
-                (12400, 0.10),
-                (50400, 0.12),
-                (105700, 0.22),
-                (201775, 0.24),
-                (256225, 0.32),
-                (640600, 0.35),
-                (float("inf"), 0.37),
-            ],
-            ss_wage_base=184500.0,
-            med_threshold_married=250000.0,
-            med_threshold_single=200000.0,
-            fica_rates=(0.062, 0.0145, 0.009),
-        ),
+        federal_taxes_calc,
         FlatStateIncomeTaxStrategy(0.0455),
         BrokerageCapitalGainsTax(),
         EarlyWithdrawalPenaltyCalculator(),
@@ -83,9 +85,7 @@ class StandardUSRegulations(RegulatoryEnvironment):
         ss_upper_threshold=44000.0,
         ss_middle_tier_cap=6000.0,
     )
-    get_federal_bracket_limit = lambda x, y, z: (
-        100800
-    )  # TODO actually implement this sort of function
+    get_federal_bracket_limit = federal_taxes_calc.get_bracket_limit
 
 
 def regulations_factory(world: WorldState):

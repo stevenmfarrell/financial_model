@@ -74,7 +74,7 @@ def calculate_federal_tax_kernel(
     fica_rates: tuple[float, float, float],  # (ss, med, addl_med)
 ) -> float:
     """
-    Pure mathematical logic for FICA, Progressive Income Tax, and Penalties.
+    Pure mathematical logic for FICA, Progressive Income Tax.
     """
     ss_rate, med_rate, addl_med_rate = fica_rates
 
@@ -116,3 +116,21 @@ def calculate_early_withdrawal_penalty_kernel(
     hsa_penalty = hsa_non_medical_withdrawals * 0.20 if age < 65 else 0.0
 
     return trad_penalty + roth_penalty + hsa_penalty
+
+
+def get_tax_bracket_limit_kernel(
+    target_rate: float,
+    brackets: list[tuple[float, float]],
+    standard_deduction: float,
+) -> float:
+    """
+    Finds the maximum gross taxable income allowed before spilling into the next bracket.
+    """
+    for limit, rate in brackets:
+        if rate == target_rate:
+            if limit == float("inf"):
+                return float("inf")
+            # Return the taxable base limit PLUS the standard deduction
+            return limit + standard_deduction
+
+    raise ValueError(f"Target tax rate {target_rate} not found in brackets.")

@@ -15,7 +15,7 @@ def create_history_dataframe(
     """
     rows = []
 
-    for world, personal, market, financial, decisions in history:
+    for world, personal, market, financial, metrics, decisions in history:
         row = {}
 
         # Helper to extract both fields and @property values
@@ -26,7 +26,7 @@ def create_history_dataframe(
                 for field in fields(obj)
             }
 
-            # 2. Get @property methods (like taxable_wages, net_salary_cash_flow)
+            # 2. Get @property methods
             cls = type(obj)
             props = [
                 name
@@ -44,6 +44,7 @@ def create_history_dataframe(
         row.update(extract_data(market, "mkt_"))
         row.update(extract_data(financial, "state_"))
         row.update(extract_data(decisions, "decisions_"))
+        row.update(extract_data(metrics, "metrics_"))
 
         rows.append(row)
 

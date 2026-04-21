@@ -9,6 +9,7 @@ from regulatory_kernel.tax import (
     calculate_federal_tax_kernel,
     calculate_flat_tax_kernel,
     calculate_taxable_income_kernel,
+    get_tax_bracket_limit_kernel,
 )
 
 
@@ -69,6 +70,27 @@ class InflationTrackingFederalTaxCalculator(RegulatoryCalculator):
             adj_addl_med_threshold=adj_med_threshold,
             fica_rates=self.fica_rates,
         )
+
+    def get_bracket_limit(
+        self, context: SimulationContext, target_rate: float
+    ) -> float:
+        """Adapter to fetch inflation-adjusted bracket limits."""
+        inf = context.world.cumulative_inflation_index
+        is_married = context.personal.marital_status == "married"
+
+        std_deduction = (
+            self.std_deduction_married if is_married else self.std_deduction_single
+        ) * inf
+
+        raw_brackets = self.brackets_married if is_married else self.brackets_single
+
+        # Scale the brackets by inflation
+        adj_brackets = [
+            (limit * inf if limit != float("inf") else limit, rate)
+            for limit, rate in raw_brackets
+        ]
+
+        return get_tax_bracket_limit_kernel(target_rate, adj_brackets, std_deduction)
 
 
 class BrokerageCapitalGainsTax(RegulatoryCalculator):
