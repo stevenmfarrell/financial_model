@@ -3,10 +3,6 @@ from models import RothConversionStrategy, SimulationContext, YearlyDecisionsPla
 
 
 class FillTaxBracketConversion(RothConversionStrategy):
-    """
-    Converts Traditional funds to Roth up to the limit of a target tax bracket.
-    """
-
     def __init__(self, target_bracket_rate: float):
         self.target_rate = target_bracket_rate
 
@@ -16,18 +12,37 @@ class FillTaxBracketConversion(RothConversionStrategy):
         financial = context.financial
         regs = context.regulations
 
-        # 1. What is our taxable income BEFORE the conversion?
-        # This includes wages and SS, but currently 0 conversions.
+        # 1. Calculate Tax Headroom (as before)
         current_taxable = regs.get_taxable_income(context, plan)
-
-        # 2. Find the dollar limit for the top of our target bracket
-        # e.g., for 'married', the 12% bracket might end at $100,800 * inflation
         bracket_limit = regs.get_federal_bracket_limit(context, self.target_rate)
+        tax_headroom = max(0.0, bracket_limit - current_taxable)
 
-        # 3. Calculate headroom
-        headroom = max(0.0, bracket_limit - current_taxable)
+        # 2. Calculate Liquidity Headroom
+        # We only want to pay taxes using "Safe" buckets (No penalties, no extra income tax)
+        safe_assets = (
+            financial.cash_balance
+            + financial.taxable_brokerage_basis
+            + financial.roth_basis
+        )
 
-        # 4. Limit by available traditional balance
-        conversion_amt = min(headroom, financial.traditional_retirement_balance)
+        # Determine how much safe liquidity is already spoken for by the lifestyle shortfall
+        # (Shortfall is lifestyle + mortgage - net salary)
+        lifestyle_shortfall = max(0.0, plan.current_cash_shortfall)
+
+        # Remaining liquidity available to pay for conversion taxes
+        available_tax_budget = max(0.0, safe_assets - lifestyle_shortfall)
+
+        # Estimated conversion cap based on budget: Budget / TaxRate
+        # e.g. If I have $2,400 and my rate is 24%, I can afford a $10,000 conversion.
+        liquidity_cap = (
+            available_tax_budget / self.target_rate if self.target_rate > 0 else 0
+        )
+
+        # 3. Final Conversion Amount is the most restrictive of the three limits
+        conversion_amt = min(
+            tax_headroom,
+            liquidity_cap,
+            financial.traditional_retirement_balance - plan.from_traditional_retirement,
+        )
 
         return replace(plan, trad_to_roth_conversion=conversion_amt)

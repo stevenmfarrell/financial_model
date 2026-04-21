@@ -187,9 +187,8 @@ def solve_withdrawal_and_tax(
     context: SimulationContext,
     initial_plan: YearlyDecisionsPlan,
     withdrawal_strat: WithdrawalStrategy,
-    conversion_strat: RothConversionStrategy,
     tax_calculator: RegulatoryCalculator,
-    max_iterations: int = 15,
+    max_iterations: int = 30,
     tolerance: float = 1.0,
 ) -> YearlyDecisionsPlan:
     """
@@ -200,7 +199,7 @@ def solve_withdrawal_and_tax(
     last_tax_bill = initial_plan.to_taxes
 
     for i in range(max_iterations):
-        current_plan = conversion_strat(context, current_plan)
+        # current_plan = conversion_strat(context, current_plan)
         current_plan = withdrawal_strat(context, current_plan)
         taxes_due = tax_calculator(context, current_plan)
         current_plan = replace(current_plan, to_taxes=taxes_due)
@@ -283,11 +282,11 @@ def simulate_year(
     decisions = config.payroll_strat(context, decisions)
     decisions = config.mortgage_strat(context, decisions)
     decisions = config.lifestyle_spending_strat(context, decisions)
+    decisions = config.conversion_strat(context, decisions)
     decisions = solve_withdrawal_and_tax(
         context,
         decisions,
         config.withdrawal_strat,
-        config.conversion_strat,
         regulations.get_taxes_due,
     )
     decisions = config.savings_strat(context, decisions)
