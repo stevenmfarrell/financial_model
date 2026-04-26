@@ -240,11 +240,10 @@ class FlatStateIncomeTaxStrategy(RegulatoryCalculator):
     def __call__(
         self, context: "SimulationContext", plan: "YearlyDecisionsPlan"
     ) -> float:
-        # Assuming your context.regulations handles the standard deduction application
         ordinary_income = context.regulations.get_taxable_income(context, plan)
 
         # Ensure we safely access the growth property, defaulting to 0.0 if not present
-        growth_income = getattr(plan, "from_taxable_brokerage_growth", 0.0)
+        growth_income = plan.from_taxable_brokerage_growth
 
         # The new function requires the combined total of ordinary income and capital gains
         total_taxable = ordinary_income + growth_income

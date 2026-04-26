@@ -167,12 +167,13 @@ def main():
         income_strat=BaristaRetirementWages(
             initial_salary=150000.0,
             barista_salary=10000,
-            barista_retirement_age=40,
+            barista_retirement_age=45,
             full_retirement_age=50,
         ),
         payroll_strat=MaximizeContributionsPayroll(
             match_401k_cap_percent=0.04,
             match_hsa_amount=1250,
+            health_insurance_premium=2000,
         ),
         lifestyle_spending_strat=InflationAdjustedSpending(
             base_spending_today_dollars=60000.0

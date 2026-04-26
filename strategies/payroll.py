@@ -16,10 +16,12 @@ class MaximizeContributionsPayroll(PayrollStrategy):
         match_401k_percent: float = 1.0,  # 100% match
         match_401k_cap_percent: float = 0.04,  # Up to 4% of gross salary
         match_hsa_amount: float = 0,
+        health_insurance_premium: float = 0,
     ):
         self.match_401k_percent = match_401k_percent
         self.match_401k_cap_percent = match_401k_cap_percent
         self.match_hsa = match_hsa_amount
+        self.health_insurance_premium = health_insurance_premium
 
     def __call__(
         self,
@@ -27,7 +29,13 @@ class MaximizeContributionsPayroll(PayrollStrategy):
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
         # 1. Read the salary established by the IncomeStrategy
-        salary = plan.gross_earned_income
+        premium = (
+            self.health_insurance_premium * context.world.cumulative_inflation_index
+        )
+        plan = replace(
+            plan, payroll_to_health_premiums=premium
+        )  # TODO probably split this into a healthcare spending strategy somehow?
+        salary = plan.gross_earned_income - premium
         remaining_funds = max(0.0, salary)
 
         # If there's no income, payroll deductions are zero
