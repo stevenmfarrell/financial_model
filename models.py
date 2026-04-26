@@ -93,8 +93,9 @@ class YearlyDecisionsPlan:
     other_taxable_income: float = 0  # e.g., Bonuses or 1099 work
 
     # --- Pre-Tax Payroll Deductions ---
-    pretax_to_trad_401k: float = 0
-    pretax_to_hsa: float = 0
+    payroll_to_trad_401k: float = 0
+    payroll_to_hsa: float = 0
+    payroll_to_health_premiums: float = 0
 
     # --- Post-Tax Payroll Deductions ---
     payroll_to_roth_401k: float = 0
@@ -128,19 +129,6 @@ class YearlyDecisionsPlan:
     trad_to_roth_conversion: float = 0
 
     @property
-    def taxable_wages(self) -> float:
-        """The 'fixed' portion of taxable income from payroll."""
-        return (
-            (
-                self.gross_earned_income
-                + self.other_taxable_income
-                + self.match_to_roth_401k
-            )
-            - self.pretax_to_trad_401k
-            - self.pretax_to_hsa
-        )
-
-    @property
     def from_roth_retirement(self) -> float:
         """The total amount pulled from Roth for cash flow balancing."""
         return (
@@ -156,8 +144,9 @@ class YearlyDecisionsPlan:
             self.gross_earned_income
             + self.social_security_recieved
             + self.other_taxable_income
-            - self.pretax_to_trad_401k
-            - self.pretax_to_hsa
+            - self.payroll_to_trad_401k
+            - self.payroll_to_hsa
+            - self.payroll_to_health_premiums
             - self.payroll_to_roth_401k
             - self.to_taxes
         )
@@ -187,9 +176,10 @@ class YearlyDecisionsPlan:
     @property
     def total_outflows(self) -> float:
         return (
-            self.pretax_to_trad_401k
-            + self.pretax_to_hsa
+            self.payroll_to_trad_401k
+            + self.payroll_to_hsa
             + self.payroll_to_roth_401k
+            + self.payroll_to_health_premiums
             + self.to_taxes
             + self.to_mortgage
             + self.to_lifestyle_spending

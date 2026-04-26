@@ -1,4 +1,4 @@
-def calculate_social_security_payout_kernel(
+def calculate_social_security_payout(
     indexed_earnings_history: tuple[float, ...],
     current_age: int,
     claiming_age: int,

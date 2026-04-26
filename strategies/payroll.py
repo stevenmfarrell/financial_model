@@ -56,8 +56,8 @@ class MaximizeContributionsPayroll(PayrollStrategy):
         # 5. Update the Ledger
         return replace(
             plan,
-            pretax_to_trad_401k=actual_401k,
-            pretax_to_hsa=actual_hsa,
+            payroll_to_trad_401k=actual_401k,
+            payroll_to_hsa=actual_hsa,
             match_to_trad_401k=actual_match,
             match_to_hsa=self.match_hsa if actual_hsa > 0 else 0,
         )

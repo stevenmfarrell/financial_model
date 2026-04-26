@@ -1,6 +1,4 @@
-def calculate_401k_limit_kernel(
-    age: int, base_limit: float, catchup_amt: float
-) -> float:
+def calculate_401k_limit(age: int, base_limit: float, catchup_amt: float) -> float:
     """Pure logic: Age-based limit selection."""
     limit = base_limit
     if age >= 50:
@@ -8,7 +6,7 @@ def calculate_401k_limit_kernel(
     return limit
 
 
-def calculate_hsa_limit_kernel(
+def calculate_hsa_limit(
     age: int,
     is_married: bool,
     nominal_single_limit: float,
@@ -29,7 +27,7 @@ def calculate_hsa_limit_kernel(
     return limit
 
 
-def calculate_household_roth_ira_limit_kernel(
+def calculate_household_roth_ira_limit(
     age: int,
     is_married: bool,
     nominal_base_limit: float,

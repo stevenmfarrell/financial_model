@@ -6,8 +6,6 @@ from models import (
     FinancialState,
     MarketConditions,
     RegulationsFactory,
-    RegulatoryEnvironment,
-    RothConversionStrategy,
     SimulationContext,
     RegulatoryCalculator,
     PersonalState,
@@ -94,7 +92,7 @@ def apply_decisions_to_financial_state(
     # 1. Update Traditional Retirement Balance
     new_trad_balance = (
         financial.traditional_retirement_balance
-        + plan.pretax_to_trad_401k
+        + plan.payroll_to_trad_401k
         + plan.match_to_trad_401k
         - plan.from_traditional_retirement
         - plan.trad_to_roth_conversion
@@ -136,7 +134,7 @@ def apply_decisions_to_financial_state(
     # 3. Update HSA Balance
     new_hsa_balance = (
         financial.hsa_balance
-        + plan.pretax_to_hsa
+        + plan.payroll_to_hsa
         + plan.match_to_hsa
         - plan.from_hsa_nonmedical
     )

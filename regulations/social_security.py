@@ -3,7 +3,7 @@ from models import (
     SimulationContext,
     YearlyDecisionsPlan,
 )
-from regulatory_kernel.social_security import calculate_social_security_payout_kernel
+from regulatory_kernel.social_security import calculate_social_security_payout
 
 
 class InflationTrackingSocialSecurityPayout(RegulatoryCalculator):
@@ -25,7 +25,7 @@ class InflationTrackingSocialSecurityPayout(RegulatoryCalculator):
         # Earnings history is stored in real dollars; inflate to nominal for the kernel
         indexed_history = tuple(e * inf for e in context.personal.real_earnings_history)
 
-        return calculate_social_security_payout_kernel(
+        return calculate_social_security_payout(
             indexed_earnings_history=indexed_history,
             current_age=context.personal.age,
             claiming_age=context.personal.social_security_claiming_age,

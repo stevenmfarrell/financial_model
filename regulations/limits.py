@@ -4,9 +4,9 @@ from models import (
     YearlyDecisionsPlan,
 )
 from regulatory_kernel.limits import (
-    calculate_401k_limit_kernel,
-    calculate_household_roth_ira_limit_kernel,
-    calculate_hsa_limit_kernel,
+    calculate_401k_limit,
+    calculate_household_roth_ira_limit,
+    calculate_hsa_limit,
 )
 
 
@@ -24,7 +24,7 @@ class InflationTracking401kLimit(RegulatoryCalculator):
         # Scale the baseline values by the simulation's cumulative inflation index
         inf = context.world.cumulative_inflation_index
 
-        return calculate_401k_limit_kernel(
+        return calculate_401k_limit(
             age=context.personal.age,
             base_limit=self.base_limit * inf,
             catchup_amt=self.catchup_amt * inf,
@@ -46,7 +46,7 @@ class InflationTrackingHSALimit(RegulatoryCalculator):
         inf = context.world.cumulative_inflation_index
         personal = context.personal
 
-        return calculate_hsa_limit_kernel(
+        return calculate_hsa_limit(
             age=personal.age,
             is_married=personal.marital_status == "married",
             nominal_single_limit=self.single_limit * inf,
@@ -69,7 +69,7 @@ class InflationTrackingHouseholdRothIRALimit(RegulatoryCalculator):
         inf = context.world.cumulative_inflation_index
         personal = context.personal
 
-        return calculate_household_roth_ira_limit_kernel(
+        return calculate_household_roth_ira_limit(
             age=personal.age,
             is_married=personal.marital_status == "married",
             nominal_base_limit=self.base_limit * inf,
