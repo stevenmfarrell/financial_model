@@ -17,11 +17,13 @@ class MaximizeContributionsPayroll(PayrollStrategy):
         match_401k_cap_percent: float = 0.04,  # Up to 4% of gross salary
         match_hsa_amount: float = 0,
         health_insurance_premium: float = 0,
+        payroll_threshold: float = 50000,
     ):
         self.match_401k_percent = match_401k_percent
         self.match_401k_cap_percent = match_401k_cap_percent
         self.match_hsa = match_hsa_amount
         self.health_insurance_premium = health_insurance_premium
+        self.payroll_threshold = payroll_threshold
 
     def __call__(
         self,
@@ -38,8 +40,11 @@ class MaximizeContributionsPayroll(PayrollStrategy):
         salary = plan.gross_earned_income - premium
         remaining_funds = max(0.0, salary)
 
-        # If there's no income, payroll deductions are zero
-        if remaining_funds <= 0:
+        # Only save if we have a threshold of funds
+        if (
+            remaining_funds
+            <= self.payroll_threshold * context.world.cumulative_inflation_index
+        ):
             return plan
 
         # 2. Priority 1: HSA Contribution

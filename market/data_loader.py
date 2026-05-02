@@ -2,10 +2,14 @@ import csv
 from pathlib import Path
 from typing import Dict
 from models import MarketConditions
+import os
+
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+HISTORICAL_DATA_PATH = os.path.join(_CURRENT_DIR, "historical.csv")
 
 
 def load_market_conditions_from_csv(
-    file_path: str | Path = "historical.csv",
+    file_path: str | Path = HISTORICAL_DATA_PATH,
 ) -> Dict[int, MarketConditions]:
     """
     Reads a CSV of yearly market data and returns a dictionary keyed by year.

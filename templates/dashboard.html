@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Financial Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+
+<body>
+    <div id="chart" style="width:100%;height:600px;"></div>
+
+    <script>
+        const rawData = {{ data | tojson | safe }};
+
+        const traces = [
+            { x: rawData.years, y: rawData.brokerage, name: 'Brokerage', type: 'scatter' },
+            { x: rawData.years, y: rawData.traditional, name: 'Traditional', type: 'scatter' },
+            { x: rawData.years, y: rawData.roth, name: 'Roth', type: 'scatter' },
+            { x: rawData.years, y: rawData.hsa, name: 'HSA', type: 'scatter' },
+            // New Trace for Liquid Assets
+            {
+                x: rawData.years,
+                y: rawData.liquid_assets,
+                name: 'Total Liquid Assets',
+                type: 'scatter',
+                line: { width: 4, dash: 'dot' } // Thicker dashed line for the total
+            }
+        ];
+
+        const layout = {
+            title: 'Account Balances & Liquid Net Worth Over Time',
+            xaxis: { title: 'Year' },
+            yaxis: { title: 'Balance ($)' },
+            template: 'plotly_white',
+            hovermode: 'x unified'
+        };
+
+        Plotly.newPlot('chart', traces, layout);
+    </script>
+</body>
+
+</html>
