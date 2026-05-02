@@ -14,7 +14,7 @@ from output import create_history_dataframe
 from strategies.conversion import FillTaxBracketConversion
 from strategies.mortgage import FixedMortgage
 from strategies.payroll import MaximizeContributionsPayroll
-from strategies.rebalance import GlidePathRebalance
+from strategies.rebalance import TaxAwareGlidePathRebalance
 from strategies.savings import WaterfallSavings
 from strategies.spending import InflationAdjustedSpending
 from strategies.income import BaristaRetirementWages
@@ -89,7 +89,7 @@ def main():
         conversion_strat=FillTaxBracketConversion(0.12),
         savings_strat=WaterfallSavings(target_cash_reserve=20000),
         withdrawal_strat=SequentialWithdrawal(),
-        rebalance_strat=GlidePathRebalance(),
+        rebalance_strat=TaxAwareGlidePathRebalance(),
     )
     history_tuples = run_simulation(
         years=60,

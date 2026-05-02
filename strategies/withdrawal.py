@@ -6,6 +6,7 @@ from models import (
     WithdrawalStrategy,
     YearlyDecisionsPlan,
 )
+from regulatory_kernel.limits import calculate_uniform_lifetime_divisor
 
 
 class SequentialWithdrawal(WithdrawalStrategy):
@@ -22,6 +23,20 @@ class SequentialWithdrawal(WithdrawalStrategy):
     ) -> YearlyDecisionsPlan:
         financial = context.financial
         age = context.personal.age
+
+        # --- Required Minimum Distribution (RMD) logic ---
+        rmd_amount = 0.0
+        # RMD Age is 73 for those born after 1950, 75 for those born after 1959
+        rmd_start_age = 75
+        if age >= rmd_start_age:
+            divisor = calculate_uniform_lifetime_divisor(age)
+            if divisor > 0:
+                rmd_amount = financial.traditional_retirement_balance / divisor
+
+        # Apply RMD immediately to the plan
+        plan = replace(plan, from_traditional_retirement=rmd_amount)
+        # ----------------------
+
         shortfall = max(0.0, plan.current_cash_shortfall)
 
         if shortfall <= 0:
@@ -79,13 +94,22 @@ class SequentialWithdrawal(WithdrawalStrategy):
                 financial.taxable_brokerage_basis / financial.taxable_brokerage_balance
             )
 
-        basis = amount * basis_ratio
+        # Apply a parabolic basis skew formula
+        # This simulates picking high-basis lots first.
+        skewed_basis_fraction = 1.0 - (1.0 - basis_ratio) ** 2
+
+        # Determine the dollar amounts
+        basis_withdrawn = min(
+            amount * skewed_basis_fraction, financial.taxable_brokerage_basis
+        )
+        growth_withdrawn = amount - basis_withdrawn
+
         return (
             amount,
             shortfall - amount,
             {
-                "from_taxable_brokerage_basis": basis,
-                "from_taxable_brokerage_growth": amount - basis,
+                "from_taxable_brokerage_basis": basis_withdrawn,
+                "from_taxable_brokerage_growth": growth_withdrawn,
             },
         )
 

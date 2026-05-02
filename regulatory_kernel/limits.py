@@ -45,3 +45,35 @@ def calculate_household_roth_ira_limit(
     multiplier = 2 if is_married else 1
 
     return per_person_limit * multiplier
+
+
+def calculate_uniform_lifetime_divisor(age: int) -> float:
+    """
+    Approximate divisors from the IRS Uniform Lifetime Table.
+    Starts at age 73 per SECURE 2.0.
+    """
+    # Simplified table for modeling
+    table = {
+        73: 26.5,
+        74: 25.5,
+        75: 24.6,
+        76: 23.7,
+        77: 22.9,
+        78: 22.0,
+        79: 21.1,
+        80: 20.2,
+        85: 16.0,
+        90: 12.2,
+        95: 8.9,
+        100: 6.4,
+        110: 3.5,
+        120: 2.0,
+    }
+    # Return linear interpolation or the closest lower age value
+    if age < 73:
+        return 0.0
+    sorted_ages = sorted(table.keys())
+    for a in sorted_ages:
+        if age <= a:
+            return table[a]
+    return 2.0  # Catch-all for extreme longevity
