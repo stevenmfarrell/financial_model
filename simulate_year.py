@@ -17,6 +17,12 @@ from models import (
 from strategies.income import CombinedIncome, SocialSecurityIncome
 
 
+class BankruptcyError(Exception):
+    """Raised when the yearly plan is cannot balance spending, withdrawals, and taxes"""
+
+    pass
+
+
 def grow_account(
     balance: float, stock_return: float, bond_return: float, stock_alloc: float
 ) -> float:
@@ -208,7 +214,15 @@ def solve_withdrawal_and_tax(
             break
 
         last_tax_bill = current_tax_bill
+        print(
+            f"iteration {i} of {max_iterations}: shortfall ${current_plan.current_cash_shortfall:,.2f}"
+        )
 
+    if current_plan.current_cash_shortfall > 1.0:
+        print(current_plan)
+        raise BankruptcyError(
+            f"Cash shortfall is {current_plan.current_cash_shortfall}"
+        )
     return current_plan
 
 
@@ -281,12 +295,16 @@ def simulate_year(
     decisions = config.mortgage_strat(context, decisions)
     decisions = config.lifestyle_spending_strat(context, decisions)
     decisions = config.conversion_strat(context, decisions)
-    decisions = solve_withdrawal_and_tax(
-        context,
-        decisions,
-        config.withdrawal_strat,
-        regulations.get_taxes_due,
-    )
+    try:
+        decisions = solve_withdrawal_and_tax(
+            context,
+            decisions,
+            config.withdrawal_strat,
+            regulations.get_taxes_due,
+        )
+    except BankruptcyError as e:
+        print(financial)
+        raise e
     decisions = config.savings_strat(context, decisions)
 
     financial = apply_decisions_to_financial_state(world, financial, decisions)

@@ -13,7 +13,7 @@ from models import (
     YearlyDecisionsPlan,
     YearlyMetrics,
 )
-from simulate_year import simulate_year
+from simulate_year import BankruptcyError, simulate_year
 
 SimulationOutputRecord = tuple[
     WorldState,
@@ -47,10 +47,15 @@ def run_simulation(
 
     for i in range(years):
         market = market_conditions_list[i]
-
-        # 1. Simulate the year
-        year_end_world, year_end_financial, year_end_personal, metrics, decisions = (
-            simulate_year(
+        try:
+            # 1. Simulate the year
+            (
+                year_end_world,
+                year_end_financial,
+                year_end_personal,
+                metrics,
+                decisions,
+            ) = simulate_year(
                 world=year_start_world,
                 financial=year_start_financial,
                 personal=year_start_personal,
@@ -58,19 +63,22 @@ def run_simulation(
                 regulations_factory=regulations_factory,
                 config=config,
             )
-        )
 
-        # 2. Record the end-of-year state
-        history.append(
-            (
-                year_end_world,
-                year_end_personal,
-                market,
-                year_end_financial,
-                metrics,
-                decisions,
+            # 2. Record the end-of-year state
+            history.append(
+                (
+                    year_end_world,
+                    year_end_personal,
+                    market,
+                    year_end_financial,
+                    metrics,
+                    decisions,
+                )
             )
-        )
+        except BankruptcyError as e:
+            print(f"Simulation failed at age {year_start_personal.age}: {e}")
+            break
+
         # Move to start of next year
         year_start_world = replace(year_end_world, year=year_end_world.year + 1)
         year_start_personal = year_end_personal

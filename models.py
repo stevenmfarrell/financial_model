@@ -154,9 +154,7 @@ class YearlyDecisionsPlan:
     @property
     def current_cash_shortfall(self) -> float:
         """If positive, you need to withdraw. If negative, you have a surplus."""
-        return (
-            self.to_lifestyle_spending + self.to_mortgage
-        ) - self.net_salary_cash_flow
+        return self.total_outflows - self.total_inflows
 
     @property
     def total_inflows(self) -> float:
