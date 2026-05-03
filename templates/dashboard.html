@@ -6,105 +6,134 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 20px;
             background-color: #f4f4f9;
         }
 
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        /* Grid Layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
         .chart-card {
             background: white;
-            padding: 20px;
-            margin-bottom: 30px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
+        .chart-div {
+            height: 400px;
+        }
+
         h2 {
             color: #333;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 10px;
+            font-size: 1.2rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-top: 0;
+        }
+
+        /* Responsive stack for smaller screens */
+        @media (max-width: 1100px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h1>Simulation Details</h1>
+    <h1>Financial Simulation Details</h1>
 
-    <div class="chart-card">
-        <h2>Market Conditions</h2>
-        <div id="market_chart" style="height:500px;"></div>
-    </div>
-    <div class="chart-card">
-        <h2>Asset Balances</h2>
-        <div id="assets_chart" style="height:500px;"></div>
-    </div>
-    <div class="chart-card">
-        <h2>Withdrawal & Income Breakdown (Sources)</h2>
-        <div id="sources_chart" style="height:500px;"></div>
-    </div>
+    <div class="grid-container">
+        <div class="chart-card">
+            <h2>Asset Balances</h2>
+            <div id="assets_chart" class="chart-div"></div>
+        </div>
 
-    <div class="chart-card">
-        <h2>Expense Breakdown (Taxes & Spending)</h2>
-        <div id="expenses_chart" style="height:500px;"></div>
+        <div class="chart-card">
+            <h2>Cash Sources (Income & Withdrawals)</h2>
+            <div id="sources_chart" class="chart-div"></div>
+        </div>
+
+        <div class="chart-card">
+            <h2>Market Conditions</h2>
+            <div id="market_chart" class="chart-div"></div>
+        </div>
+
+        <div class="chart-card">
+            <h2>Expense Breakdown (Outflows)</h2>
+            <div id="expenses_chart" class="chart-div"></div>
+        </div>
     </div>
 
     <script>
         const data = {{ data | tojson | safe }};
-
-        // 3. Simple Asset Line Chart
-        const marketTraces = [
-            { x: data.years, y: data.market.stocks, name: 'Stock Returns' },
-            { x: data.years, y: data.market.bonds, name: 'Bond Returns' },
-            { x: data.years, y: data.market.inflation, name: 'Inflation' },
-        ];
-        Plotly.newPlot('market_chart', marketTraces, {
-            title: 'Simulated Market Conditions',
-            yaxis: { title: 'Annual Rate', tickformat: ',.0%' },
-            template: 'plotly_white', hovermode: 'x unified'
-        });
-
-        // 3. Simple Asset Line Chart
-        const assetTraces = [
-            { x: data.years, y: data.assets.total, name: 'Total Liquid Assets', line: { width: 4, color: 'black' } },
-            { x: data.years, y: data.assets.traditional, name: 'Traditional' },
-            { x: data.years, y: data.assets.roth, name: 'Roth' },
-            { x: data.years, y: data.assets.brokerage, name: 'Brokerage' }
-        ];
-        Plotly.newPlot('assets_chart', assetTraces, {
-            yaxis: { title: 'Balance ($)' },
+        const commonLayout = {
+            template: 'plotly_white',
             hovermode: 'x unified',
-            template: 'plotly_white'
+            margin: { l: 50, r: 30, t: 30, b: 50 }
+        };
+
+        // Market Chart
+        Plotly.newPlot('market_chart', [
+            { x: data.ages, y: data.market.stocks, name: 'Stock Returns' },
+            { x: data.ages, y: data.market.bonds, name: 'Bond Returns' },
+            { x: data.ages, y: data.market.inflation, name: 'Inflation', line: { dash: 'dot' } }
+        ], {
+            ...commonLayout,
+            yaxis: { title: 'Annual Rate', tickformat: ',.0%' }
         });
 
-        // 1. Sources of Cash (Stacked Bar)
-        const sourceTraces = [
-            { x: data.years, y: data.income.earned, name: 'Earned Income', type: 'bar' },
-            { x: data.years, y: data.income.ss, name: 'Social Security', type: 'bar' },
-            { x: data.years, y: data.withdrawals.trad, name: 'From Traditional IRA/401k', type: 'bar' },
-            { x: data.years, y: data.withdrawals.roth, name: 'From Roth', type: 'bar' },
-            { x: data.years, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar' },
-            { x: data.years, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar' },
-            { x: data.years, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar' },
-            { x: data.years, y: data.withdrawals.cash, name: 'From Cash Reserve', type: 'bar' }
-        ];
-        Plotly.newPlot('sources_chart', sourceTraces, {
+        // Assets Chart
+        Plotly.newPlot('assets_chart', [
+            { x: data.ages, y: data.assets.total, name: 'Total Liquid Assets', line: { width: 4, color: 'black' } },
+            { x: data.ages, y: data.assets.traditional, name: 'Traditional' },
+            { x: data.ages, y: data.assets.roth, name: 'Roth' },
+            { x: data.ages, y: data.assets.brokerage, name: 'Brokerage' }
+        ], {
+            ...commonLayout,
+            yaxis: { title: 'Balance ($)' }
+        });
+
+        // Sources Chart (Stacked)
+        Plotly.newPlot('sources_chart', [
+            { x: data.ages, y: data.income.earned, name: 'Earned Income', type: 'bar' },
+            { x: data.ages, y: data.income.ss, name: 'Social Security', type: 'bar' },
+            { x: data.ages, y: data.withdrawals.trad, name: 'From Trad.', type: 'bar' },
+            { x: data.ages, y: data.withdrawals.roth, name: 'From Roth', type: 'bar' },
+            { x: data.ages, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar' },
+            { x: data.ages, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar' },
+            { x: data.ages, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar' },
+            { x: data.ages, y: data.withdrawals.cash, name: 'From Cash Reserve', type: 'bar' }
+
+
+        ], {
+            ...commonLayout,
             barmode: 'stack',
-            yaxis: { title: 'Amount ($)' },
-            hovermode: 'x unified',
-            template: 'plotly_white'
+            yaxis: { title: 'Amount ($)' }
         });
 
-        // 2. Expenses & Taxes (Stacked Bar)
-        const expenseTraces = [
-            { x: data.years, y: data.outflows.taxes, name: 'Taxes Paid', type: 'bar', marker: { color: '#d62728' } },
-            { x: data.years, y: data.outflows.mortgage, name: 'Mortgage Payments', type: 'bar', marker: { color: '#ff7f0e' } },
-            { x: data.years, y: data.outflows.spending, name: 'Lifestyle Spending', type: 'bar', marker: { color: '#2ca02c' } }
-        ];
-        Plotly.newPlot('expenses_chart', expenseTraces, {
+        // Expenses Chart (Stacked)
+        Plotly.newPlot('expenses_chart', [
+            { x: data.ages, y: data.outflows.taxes, name: 'Taxes', type: 'bar', marker: { color: '#d62728' } },
+            { x: data.ages, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: '#ff7f0e' } },
+            { x: data.ages, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: '#2ca02c' } }
+        ], {
+            ...commonLayout,
             barmode: 'stack',
-            yaxis: { title: 'Amount ($)' },
-            hovermode: 'x unified',
-            template: 'plotly_white'
+            yaxis: { title: 'Amount ($)' }
         });
     </script>
 </body>

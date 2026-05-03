@@ -39,6 +39,7 @@ def dashboard():
 
         data_packet = {
             "years": df["year"].tolist(),
+            "ages": df["age"].tolist(),
             "assets": {
                 "brokerage": df["state_taxable_brokerage_balance"].tolist(),
                 "traditional": df["state_traditional_retirement_balance"].tolist(),
