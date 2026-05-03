@@ -80,17 +80,31 @@
 
     <script>
         const data = {{ data | tojson | safe }};
+
+        const xLabels = data.years.map((year, i) => `${year}<br>Age ${data.ages[i]}`);
+
+        // Filter to show a tick only every 5 years
+        const tickIndices = data.years.map((_, i) => i).filter(i => i % 5 === 0);
+        const tickVals = tickIndices.map(i => xLabels[i]);
+        const tickText = tickIndices.map(i => xLabels[i]);
+
         const commonLayout = {
             template: 'plotly_white',
             hovermode: 'x unified',
-            margin: { l: 50, r: 30, t: 30, b: 50 }
+            margin: { l: 50, r: 30, t: 30, b: 50 },
+            xaxis: {
+                tickmode: 'array',
+                tickvals: tickVals,
+                ticktext: tickText,
+                automargin: true
+            }
         };
 
         // Market Chart
         Plotly.newPlot('market_chart', [
-            { x: data.ages, y: data.market.stocks, name: 'Stock Returns' },
-            { x: data.ages, y: data.market.bonds, name: 'Bond Returns' },
-            { x: data.ages, y: data.market.inflation, name: 'Inflation', line: { dash: 'dot' } }
+            { x: xLabels, y: data.market.stocks, name: 'Stock Returns' },
+            { x: xLabels, y: data.market.bonds, name: 'Bond Returns' },
+            { x: xLabels, y: data.market.inflation, name: 'Inflation', line: { dash: 'dot' } }
         ], {
             ...commonLayout,
             yaxis: { title: 'Annual Rate', tickformat: ',.0%' }
@@ -98,10 +112,10 @@
 
         // Assets Chart
         Plotly.newPlot('assets_chart', [
-            { x: data.ages, y: data.assets.total, name: 'Total Liquid Assets', line: { width: 4, color: 'black' } },
-            { x: data.ages, y: data.assets.traditional, name: 'Traditional' },
-            { x: data.ages, y: data.assets.roth, name: 'Roth' },
-            { x: data.ages, y: data.assets.brokerage, name: 'Brokerage' }
+            { x: xLabels, y: data.assets.total, name: 'Total Liquid Assets', line: { width: 4, color: 'black' } },
+            { x: xLabels, y: data.assets.traditional, name: 'Traditional' },
+            { x: xLabels, y: data.assets.roth, name: 'Roth' },
+            { x: xLabels, y: data.assets.brokerage, name: 'Brokerage' }
         ], {
             ...commonLayout,
             yaxis: { title: 'Balance ($)' }
@@ -109,14 +123,14 @@
 
         // Sources Chart (Stacked)
         Plotly.newPlot('sources_chart', [
-            { x: data.ages, y: data.income.earned, name: 'Earned Income', type: 'bar' },
-            { x: data.ages, y: data.income.ss, name: 'Social Security', type: 'bar' },
-            { x: data.ages, y: data.withdrawals.trad, name: 'From Trad.', type: 'bar' },
-            { x: data.ages, y: data.withdrawals.roth, name: 'From Roth', type: 'bar' },
-            { x: data.ages, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar' },
-            { x: data.ages, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar' },
-            { x: data.ages, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar' },
-            { x: data.ages, y: data.withdrawals.cash, name: 'From Cash Reserve', type: 'bar' }
+            { x: xLabels, y: data.income.earned, name: 'Earned Income', type: 'bar' },
+            { x: xLabels, y: data.income.ss, name: 'Social Security', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.trad, name: 'From Trad.', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.roth, name: 'From Roth', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.cash, name: 'From Cash Reserve', type: 'bar' }
 
 
         ], {
@@ -127,9 +141,9 @@
 
         // Expenses Chart (Stacked)
         Plotly.newPlot('expenses_chart', [
-            { x: data.ages, y: data.outflows.taxes, name: 'Taxes', type: 'bar', marker: { color: '#d62728' } },
-            { x: data.ages, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: '#ff7f0e' } },
-            { x: data.ages, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: '#2ca02c' } }
+            { x: xLabels, y: data.outflows.taxes, name: 'Taxes', type: 'bar', marker: { color: '#d62728' } },
+            { x: xLabels, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: '#ff7f0e' } },
+            { x: xLabels, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: '#2ca02c' } }
         ], {
             ...commonLayout,
             barmode: 'stack',
