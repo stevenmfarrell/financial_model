@@ -9,25 +9,14 @@ def dashboard():
     try:
         df = pd.read_csv("simulation_results.csv")
 
-        # Define columns to extract
-        balance_cols = [
-            "state_taxable_brokerage_balance",
-            "state_traditional_retirement_balance",
-            "state_roth_retirement_balance",
-            "state_hsa_balance",
-            "state_liquid_assets",
-        ]
-        market_cols = [
-            "mkt_annual_inflation_rate",
-            "mkt_annual_stock_return",
-            "mkt_annual_bond_return",
-        ]
-        flow_cols = [
+        # Define specific granular columns to extract
+        cols_to_load = [
+            "year",
+            "decisions_to_taxes",
+            "decisions_to_mortgage",
+            "decisions_to_lifestyle_spending",
             "decisions_gross_earned_income",
             "decisions_social_security_received",
-            "decisions_to_lifestyle_spending",
-            "decisions_to_mortgage",
-            "decisions_to_taxes",
             "decisions_from_traditional_retirement",
             "decisions_from_roth_retirement",
             "decisions_from_taxable_brokerage_basis",
@@ -36,29 +25,17 @@ def dashboard():
             "decisions_from_cash_reserve",
         ]
 
-        # Convert to numeric and fill NaNs
-        all_cols = balance_cols + market_cols + flow_cols + ["year"]
-        for c in all_cols:
-            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
+        # Asset columns for the first chart
+        asset_cols = [
+            "state_taxable_brokerage_balance",
+            "state_traditional_retirement_balance",
+            "state_roth_retirement_balance",
+            "state_hsa_balance",
+            "state_liquid_assets",
+        ]
 
-        # Calculate aggregates for the flows plot
-        df["total_income"] = (
-            df["decisions_gross_earned_income"]
-            + df["decisions_social_security_received"]
-        )
-        df["total_spending"] = (
-            df["decisions_to_lifestyle_spending"]
-            + df["decisions_to_mortgage"]
-            + df["decisions_to_taxes"]
-        )
-        df["total_withdrawals"] = (
-            df["decisions_from_traditional_retirement"]
-            + df["decisions_from_roth_retirement"]
-            + df["decisions_from_taxable_brokerage_basis"]
-            + df["decisions_from_taxable_brokerage_growth"]
-            + df["decisions_from_hsa_nonmedical"]
-            + df["decisions_from_cash_reserve"]
-        )
+        for c in cols_to_load + asset_cols:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
 
         data_packet = {
             "years": df["year"].tolist(),
@@ -67,17 +44,33 @@ def dashboard():
                 "traditional": df["state_traditional_retirement_balance"].tolist(),
                 "roth": df["state_roth_retirement_balance"].tolist(),
                 "hsa": df["state_hsa_balance"].tolist(),
-                "liquid_assets": df["state_liquid_assets"].tolist(),
+                "total": df["state_liquid_assets"].tolist(),
+            },
+            "withdrawals": {
+                "trad": df["decisions_from_traditional_retirement"].tolist(),
+                "roth": df["decisions_from_roth_retirement"].tolist(),
+                "brokerage_basis": df[
+                    "decisions_from_taxable_brokerage_basis"
+                ].tolist(),
+                "brokerage_growth": df[
+                    "decisions_from_taxable_brokerage_growth"
+                ].tolist(),
+                "hsa": df["decisions_from_hsa_nonmedical"].tolist(),
+                "cash": df["decisions_from_cash_reserve"].tolist(),
+            },
+            "outflows": {
+                "taxes": df["decisions_to_taxes"].tolist(),
+                "mortgage": df["decisions_to_mortgage"].tolist(),
+                "spending": df["decisions_to_lifestyle_spending"].tolist(),
+            },
+            "income": {
+                "earned": df["decisions_gross_earned_income"].tolist(),
+                "ss": df["decisions_social_security_received"].tolist(),
             },
             "market": {
                 "inflation": df["mkt_annual_inflation_rate"].tolist(),
                 "stocks": df["mkt_annual_stock_return"].tolist(),
                 "bonds": df["mkt_annual_bond_return"].tolist(),
-            },
-            "flows": {
-                "income": df["total_income"].tolist(),
-                "spending": df["total_spending"].tolist(),
-                "withdrawals": df["total_withdrawals"].tolist(),
             },
         }
 
