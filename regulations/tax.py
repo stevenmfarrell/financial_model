@@ -158,7 +158,7 @@ class InflationTrackingFederalTaxCalculator(RegulatoryCalculator):
             hsa_non_medical_withdrawals=plan.from_hsa_nonmedical,
             trad_to_roth_conversion=plan.trad_to_roth_conversion,
             age=context.personal.age,
-            ss_received=plan.social_security_recieved,
+            ss_received=plan.social_security_received,
             ss_base_threshold=adj_ss_base,
             ss_upper_threshold=adj_ss_upper,
             ss_middle_tier_cap=adj_ss_mid_cap,
@@ -316,7 +316,7 @@ class InflationTrackingTaxableIncomeCalculator(RegulatoryCalculator):
             hsa_non_medical_withdrawals=plan.from_hsa_nonmedical,
             trad_to_roth_conversion=plan.trad_to_roth_conversion,
             age=context.personal.age,
-            ss_received=plan.social_security_recieved,  # Kept your original spelling
+            ss_received=plan.social_security_received,  # Kept your original spelling
             ss_base_threshold=self.ss_base_threshold * inf,
             ss_upper_threshold=self.ss_upper_threshold * inf,
             ss_middle_tier_cap=self.ss_middle_tier_cap * inf,

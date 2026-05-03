@@ -80,24 +80,24 @@ class CombinedIncome(IncomeStrategy):
     ) -> YearlyDecisionsPlan:
         gross_earned_income = 0
         other_taxable_income = 0
-        social_security_recieved = 0
+        social_security_received = 0
         for strat in self.strats:
             result = strat(context, plan)
             gross_earned_income += result.gross_earned_income
             other_taxable_income += result.other_taxable_income
-            social_security_recieved += result.social_security_recieved
+            social_security_received += result.social_security_received
 
         return replace(
             plan,
             gross_earned_income=gross_earned_income,
-            social_security_recieved=social_security_recieved,
+            social_security_received=social_security_received,
             other_taxable_income=other_taxable_income,
         )
 
 
 class SocialSecurityIncome(IncomeStrategy):
     """
-    Models income recieved by Social Security
+    Models income received by Social Security
     """
 
     def __call__(
@@ -105,7 +105,7 @@ class SocialSecurityIncome(IncomeStrategy):
         context: SimulationContext,
         plan: YearlyDecisionsPlan,
     ) -> YearlyDecisionsPlan:
-        social_security_recieved = context.regulations.get_social_security_benefits(
+        social_security_received = context.regulations.get_social_security_benefits(
             context, plan
         )
-        return replace(plan, social_security_recieved=social_security_recieved)
+        return replace(plan, social_security_received=social_security_received)

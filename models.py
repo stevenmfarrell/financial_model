@@ -89,7 +89,7 @@ class FinancialState:
 class YearlyDecisionsPlan:
     # --- Inflows ---
     gross_earned_income: float = 0
-    social_security_recieved: float = 0
+    social_security_received: float = 0
     other_taxable_income: float = 0  # e.g., Bonuses or 1099 work
 
     # --- Pre-Tax Payroll Deductions ---
@@ -142,7 +142,7 @@ class YearlyDecisionsPlan:
         """The actual 'take-home' cash from the paycheck after all deductions and taxes."""
         return (
             self.gross_earned_income
-            + self.social_security_recieved
+            + self.social_security_received
             + self.other_taxable_income
             - self.payroll_to_trad_401k
             - self.payroll_to_hsa
@@ -160,7 +160,7 @@ class YearlyDecisionsPlan:
     def total_inflows(self) -> float:
         return (
             self.gross_earned_income
-            + self.social_security_recieved
+            + self.social_security_received
             + self.other_taxable_income
             + self.from_traditional_retirement
             + self.from_roth_retirement
