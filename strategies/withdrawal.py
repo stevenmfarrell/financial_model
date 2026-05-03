@@ -24,6 +24,18 @@ class SequentialWithdrawal(WithdrawalStrategy):
         financial = context.financial
         age = context.personal.age
 
+        plan = replace(
+            plan,
+            from_traditional_retirement=0,
+            from_hsa_nonmedical=0,
+            from_taxable_brokerage_growth=0,
+            from_taxable_brokerage_basis=0,
+            from_roth_retirement_basis=0,
+            from_roth_conversion_penalized=0,
+            from_roth_retirement_earnings=0,
+            from_cash_reserve=0,
+        )
+
         # --- Required Minimum Distribution (RMD) logic ---
         rmd_amount = 0.0
         # RMD Age is 73 for those born after 1950, 75 for those born after 1959

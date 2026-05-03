@@ -1,11 +1,18 @@
+import numpy as np
+
 from decisions_config import YearlyDecisionsConfiguration
-from market.providers import ConstantMarketProvider, RandomHistoricalMarketProvider
+from market.providers import (
+    ConstantMarketProvider,
+    RandomHistoricalMarketProvider,
+    SequentialHistoricalMarketProvider,
+)
 from models import (
     FinancialState,
     WorldState,
     PersonalState,
     MarketConditions,
 )
+from monte_carlo_runner import MonteCarloRunner
 from regulatory_environment import regulations_factory
 from simulation_runner import run_simulation
 
@@ -57,25 +64,25 @@ def main():
         mortgage_annual_payment=24000.0,
     )
 
-    market = ConstantMarketProvider(
-        MarketConditions(
-            annual_inflation_rate=0.02,
-            annual_stock_return=0.07,
-            annual_bond_return=0.04,
-            annual_cash_return=0.01,
-            annual_home_appreciation_rate=0.02,
-        )
-    )
-
-    # market = RandomHistoricalMarketProvider()
+    market_provider = RandomHistoricalMarketProvider(block_size=5)
+    # market_provider = SequentialHistoricalMarketProvider()
+    # market_provider = ConstantMarketProvider(
+    #     MarketConditions(
+    #         annual_inflation_rate=0.02,
+    #         annual_stock_return=0.07,
+    #         annual_bond_return=0.04,
+    #         annual_cash_return=0.01,
+    #         annual_home_appreciation_rate=0.02,
+    #     )
+    # )
 
     # 3. Instantiate the strategies
     decisions_config = YearlyDecisionsConfiguration(
         income_strat=BaristaRetirementWages(
             initial_salary=150000.0,
-            barista_salary=30000,
-            barista_retirement_age=41,
-            full_retirement_age=41,
+            barista_salary=20000,
+            barista_retirement_age=40,
+            full_retirement_age=70,
         ),
         payroll_strat=MaximizeContributionsPayroll(
             match_401k_cap_percent=0.04,
@@ -89,22 +96,46 @@ def main():
         conversion_strat=FillTaxBracketConversion(0.12),
         savings_strat=WaterfallSavings(target_cash_reserve=20000),
         withdrawal_strat=SequentialWithdrawal(),
-        rebalance_strat=TaxAwareGlidePathRebalance(),
-    )
-    history_tuples = run_simulation(
-        years=60,
-        initial_world=initial_world,
-        initial_financial=initial_financial,
-        initial_personal=initial_personal,
-        market_conditions_provider=market,
-        regulations_factory=regulations_factory,
-        config=decisions_config,
-        random_seed=25,
+        rebalance_strat=TaxAwareGlidePathRebalance(
+            glide_start_age=35, glide_end_age=45, final_stock_ratio=0.4
+        ),
     )
 
-    df = create_history_dataframe(history_tuples)
-    df.to_csv("simulation_results.csv", float_format="%.2f", index=False)
-    print("Simulation successful. Results saved to simulation_results.csv")
+    def run_monte_carlo():
+        mc = MonteCarloRunner(trials=500)
+        results = mc.run(
+            years=60,
+            initial_world=initial_world,
+            initial_financial=initial_financial,
+            initial_personal=initial_personal,
+            market_provider=market_provider,
+            regulations_factory=regulations_factory,
+            config=decisions_config,
+        )
+
+        print(f"Success Rate: {results['success_rate']:.1%}")
+        print(f"Median Ending Net Worth: ${results['median_net_worth']:,.2f}")
+        if results["failure_ages"]:
+            print(f"Mean Failure Age: {np.mean(results['failure_ages']):.1f}")
+
+    def run_single():
+        history_tuples = run_simulation(
+            years=60,
+            initial_world=initial_world,
+            initial_financial=initial_financial,
+            initial_personal=initial_personal,
+            market_conditions_provider=market_provider,
+            regulations_factory=regulations_factory,
+            config=decisions_config,
+            random_seed=25,
+        )
+
+        df = create_history_dataframe(history_tuples)
+        df.to_csv("simulation_results.csv", float_format="%.2f", index=False)
+        print("Simulation successful. Results saved to simulation_results.csv")
+
+    # run_monte_carlo()
+    run_single()
 
 
 if __name__ == "__main__":

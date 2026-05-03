@@ -214,12 +214,8 @@ def solve_withdrawal_and_tax(
             break
 
         last_tax_bill = current_tax_bill
-        print(
-            f"iteration {i} of {max_iterations}: shortfall ${current_plan.current_cash_shortfall:,.2f}"
-        )
 
     if current_plan.current_cash_shortfall > 1.0:
-        print(current_plan)
         raise BankruptcyError(
             f"Cash shortfall is {current_plan.current_cash_shortfall}"
         )
