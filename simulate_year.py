@@ -299,7 +299,6 @@ def simulate_year(
             regulations.get_taxes_due,
         )
     except BankruptcyError as e:
-        print(financial)
         raise e
     decisions = config.savings_strat(context, decisions)
 

@@ -9,41 +9,17 @@ def dashboard():
     try:
         df = pd.read_csv("simulation_results.csv")
 
-        # Define specific granular columns to extract
-        cols_to_load = [
-            "year",
-            "decisions_to_taxes",
-            "decisions_to_mortgage",
-            "decisions_to_lifestyle_spending",
-            "decisions_gross_earned_income",
-            "decisions_social_security_received",
-            "decisions_from_traditional_retirement",
-            "decisions_from_roth_retirement",
-            "decisions_from_taxable_brokerage_basis",
-            "decisions_from_taxable_brokerage_growth",
-            "decisions_from_hsa_nonmedical",
-            "decisions_from_cash_reserve",
-        ]
-
-        # Asset columns for the first chart
-        asset_cols = [
-            "state_taxable_brokerage_balance",
-            "state_traditional_retirement_balance",
-            "state_roth_retirement_balance",
-            "state_hsa_balance",
-            "state_liquid_assets",
-        ]
-
-        for c in cols_to_load + asset_cols:
-            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0)
-
         data_packet = {
             "years": df["year"].tolist(),
             "ages": df["age"].tolist(),
             "assets": {
                 "brokerage": df["state_taxable_brokerage_balance_real"].tolist(),
                 "traditional": df["state_traditional_retirement_balance_real"].tolist(),
-                "roth": df["state_roth_retirement_balance_real"].tolist(),
+                "roth_basis": df["state_roth_basis_balance_real"].tolist(),
+                "roth_conversion": df[
+                    "state_roth_conversion_recent_balance_real"
+                ].tolist(),
+                "roth_growth": df["state_roth_growth_balance_real"].tolist(),
                 "hsa": df["state_hsa_balance_real"].tolist(),
                 "total": df["state_liquid_assets_real"].tolist(),
             },

@@ -47,13 +47,10 @@ def create_history_dataframe(
             if cls not in class_currency_maps:
                 # Identify currency fields/properties once per class
                 currency_names = []
-                print(cls)
 
                 # 1. Check Fields
                 hints = get_type_hints(cls, include_extras=True)
                 for name, hint in hints.items():
-                    print(name)
-                    print(hint)
                     if is_nominal_currency_type(hint):
                         currency_names.append(f"{prefix}{name}")
 
@@ -88,8 +85,6 @@ def create_history_dataframe(
         row.update(extract_data(metrics, "metrics_"))
         rows.append(row)
 
-    # print(rows)
-    print(currency_columns)
     df = pd.DataFrame(rows)
 
     if to_real_dollars:

@@ -3,7 +3,7 @@
 
 <head>
     <title>Financial Dashboard</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -84,12 +84,16 @@
         // --- Simplified Color Palette (Base & Light only) ---
         const colors = {
             cash: { base: '#64748b', light: '#cbd5e1' }, // Slate
-            hsa: { base: '#e11d48', light: '#fda4af' }, // Rose
-            roth: { base: '#9333ea', light: '#d8b4fe' }, // Purple
-            trad: { base: '#ea580c', light: '#fdba74' }, // Orange
+            hsa: { base: '#cf1f45', light: '#fda4af' }, // Rose
+            roth: { base: '#a45ce6', light: '#d8b4fe' }, // Purple
+            trad: { base: '#e8804a', light: '#fdba74' }, // Orange
             brokerage: { base: '#2563eb', light: '#93c5fd' }, // Blue
             income: { earned: '#059669', ss: '#10b981' },
-            outflows: { taxes: '#475569', mortgage: '#78350f', spending: '#000000' }
+            outflows: {
+                taxes: '#000000', // hich contrast for importance
+                mortgage: '#917c61',
+                spending: '#738576'
+            }
         };
 
         const xLabels = data.years.map((year, i) => `${data.ages[i]}<br>${year}`);
@@ -114,14 +118,69 @@
         };
 
         // 1. Assets Chart
+        // 1. Assets Chart (Stacked Bars with a Total Line Overlay)
         Plotly.newPlot('assets_chart', [
-            { x: xLabels, y: data.assets.total, name: 'Total Assets', line: { width: 3, color: '#000' } },
-            { x: xLabels, y: data.assets.traditional, name: 'Traditional', line: { color: colors.trad.base } },
-            { x: xLabels, y: data.assets.roth, name: 'Roth', line: { color: colors.roth.base } },
-            { x: xLabels, y: data.assets.hsa, name: 'HSA', line: { color: colors.hsa.base } },
-            { x: xLabels, y: data.assets.brokerage, name: 'Brokerage', line: { color: colors.brokerage.base } }
+            // Account Bars (using the solid 'base' colors)
+            {
+                x: xLabels,
+                y: data.assets.hsa,
+                name: 'HSA',
+                type: 'bar',
+                marker: { color: colors.hsa.base }
+            },
+            {
+                x: xLabels,
+                y: data.assets.traditional,
+                name: 'Traditional',
+                type: 'bar',
+                marker: { color: colors.trad.base }
+            },
+            {
+                x: xLabels, y: data.assets.roth_conversion, name: 'Roth (Conversion)',
+                type: 'bar',
+                marker: {
+                    pattern: {
+                        shape: '/',      // Diagonal stripes
+                        bgcolor: colors.roth.base,
+                        fgcolor: colors.trad.base, // Stripe color
+                        fgopacity: 0.9,   // Softens the stripes so they aren't jarring
+                        size: 8,          // Density of stripes
+                        solidity: 0.3     // Thickness of the stripes
+                    }
+                }
+            },
+            {
+                x: xLabels,
+                y: data.assets.roth_basis,
+                name: 'Roth (Basis)',
+                type: 'bar',
+                marker: { color: colors.roth.base }
+            },
+            {
+                x: xLabels,
+                y: data.assets.roth_growth,
+                name: 'Roth (Growth)',
+                type: 'bar',
+                marker: { color: colors.roth.light }
+            },
+            {
+                x: xLabels,
+                y: data.assets.brokerage,
+                name: 'Brokerage',
+                type: 'bar',
+                marker: { color: colors.brokerage.base }
+            },
+            // Total Line (Scatter/Line overlay)
+            {
+                x: xLabels,
+                y: data.assets.total,
+                name: 'Total Liquid Assets',
+                mode: 'lines',
+                line: { width: 3, color: '#000' }
+            }
         ], {
             ...commonLayout,
+            barmode: 'stack', // This enables the stacking logic
             yaxis: { ...commonLayout.yaxis, title: 'Balance (Real $)' }
         });
 
@@ -158,8 +217,8 @@
             { x: xLabels, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: colors.outflows.mortgage } },
             { x: xLabels, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: colors.outflows.spending } },
             { x: xLabels, y: data.savings.to_hsa, name: 'to HSA', type: 'bar', marker: { color: colors.hsa.base } },
-            { x: xLabels, y: data.savings.to_roth, name: 'to Roth', type: 'bar', marker: { color: colors.roth.base } },
             { x: xLabels, y: data.savings.to_trad, name: 'to Trad', type: 'bar', marker: { color: colors.trad.base } },
+            { x: xLabels, y: data.savings.to_roth, name: 'to Roth', type: 'bar', marker: { color: colors.roth.base } },
             { x: xLabels, y: data.savings.to_cash, name: 'to Cash', type: 'bar', marker: { color: colors.cash.base } },
             { x: xLabels, y: data.savings.to_brokerage, name: 'to Brokerage', type: 'bar', marker: { color: colors.brokerage.base } }
         ], {

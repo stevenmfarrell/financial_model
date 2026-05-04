@@ -42,7 +42,7 @@ class FinancialState:
         0.0  # Fraction of retirement balance in stocks
     )
     roth_retirement_balance: NominalCurrency = 0.0
-    roth_basis: NominalCurrency = 0.0  # amount directly contributed or converted funds that have passed the required settling period
+    roth_basis: NominalCurrency = 0.0  # amount directly contributed or converted funds that have passed the required settling period. Might in fact be higher than the current balance. For liquidity, see roth_basis_balance
 
     roth_conversion_recent: Tuple[
         Tuple[int, NominalCurrency], ...
@@ -60,21 +60,42 @@ class FinancialState:
     mortgage_annual_payment: NominalCurrency = 0.0
 
     @property
-    def total_assets(self) -> NominalCurrency:
-        """Calculates the sum of all asset accounts."""
+    def roth_basis_balance(self) -> NominalCurrency:
+        """Priority 1: The portion of the account that is basis."""
+        return min(self.roth_retirement_balance, self.roth_basis)
+
+    @property
+    def roth_conversion_recent_balance(self) -> NominalCurrency:
+        """Priority 2: The portion of the remaining balance that is recent conversions."""
+        conversion_total = sum(amount for _, amount in self.roth_conversion_recent)
+        remaining = self.roth_retirement_balance - self.roth_basis_balance
+        return min(remaining, conversion_total)
+
+    @property
+    def roth_growth_balance(self) -> NominalCurrency:
+        """Priority 3: Whatever is left is growth."""
+        # No min/max needed here; it naturally settles at 0 or higher.
+        return (
+            self.roth_retirement_balance
+            - self.roth_basis_balance
+            - self.roth_conversion_recent_balance
+        )
+
+    @property
+    def liquid_assets(self) -> NominalCurrency:
+        """Calculates total assets excluding the primary residence."""
         return (
             self.taxable_brokerage_balance
             + self.cash_balance
             + self.traditional_retirement_balance
             + self.roth_retirement_balance
             + self.hsa_balance
-            + self.primary_residence_value
         )
 
     @property
-    def liquid_assets(self) -> NominalCurrency:
-        """Calculates total assets excluding the primary residence."""
-        return self.total_assets - self.primary_residence_value
+    def total_assets(self) -> NominalCurrency:
+        """Calculates the sum of all asset accounts."""
+        return self.liquid_assets + self.primary_residence_value
 
     @property
     def total_liabilities(self) -> NominalCurrency:
