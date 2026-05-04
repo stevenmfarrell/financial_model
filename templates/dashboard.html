@@ -81,82 +81,91 @@
     <script>
         const data = {{ data | tojson | safe }};
 
-        const xLabels = data.years.map((year, i) => `${data.ages[i]}<br>${year}`);
+        // --- Simplified Color Palette (Base & Light only) ---
+        const colors = {
+            cash: { base: '#64748b', light: '#cbd5e1' }, // Slate
+            hsa: { base: '#e11d48', light: '#fda4af' }, // Rose
+            roth: { base: '#9333ea', light: '#d8b4fe' }, // Purple
+            trad: { base: '#ea580c', light: '#fdba74' }, // Orange
+            brokerage: { base: '#2563eb', light: '#93c5fd' }, // Blue
+            income: { earned: '#059669', ss: '#10b981' },
+            outflows: { taxes: '#475569', mortgage: '#78350f', spending: '#000000' }
+        };
 
-        // Filter to show a tick only every 5 years
+        const xLabels = data.years.map((year, i) => `${data.ages[i]}<br>${year}`);
         const tickIndices = data.years.map((_, i) => i).filter(i => i % 5 === 0);
         const tickVals = tickIndices.map(i => xLabels[i]);
-        const tickText = tickIndices.map(i => xLabels[i]);
 
         const commonLayout = {
             template: 'plotly_white',
             hovermode: 'x unified',
-            margin: { l: 50, r: 30, t: 30, b: 50 },
+            margin: { l: 90, r: 30, t: 30, b: 50 },
             xaxis: {
                 tickmode: 'array',
                 tickvals: tickVals,
-                ticktext: tickText,
+                ticktext: tickVals,
                 automargin: true
+            },
+            yaxis: {
+                automargin: true,
+                tickformat: '$.2s',
+                title: { standoff: 20 }
             }
         };
 
-        // Market Chart
+        // 1. Assets Chart
+        Plotly.newPlot('assets_chart', [
+            { x: xLabels, y: data.assets.total, name: 'Total Assets', line: { width: 3, color: '#000' } },
+            { x: xLabels, y: data.assets.traditional, name: 'Traditional', line: { color: colors.trad.base } },
+            { x: xLabels, y: data.assets.roth, name: 'Roth', line: { color: colors.roth.base } },
+            { x: xLabels, y: data.assets.hsa, name: 'HSA', line: { color: colors.hsa.base } },
+            { x: xLabels, y: data.assets.brokerage, name: 'Brokerage', line: { color: colors.brokerage.base } }
+        ], {
+            ...commonLayout,
+            yaxis: { ...commonLayout.yaxis, title: 'Balance (Real $)' }
+        });
+
+        // 2. Sources Chart (Basis = Base, Growth = Light)
+        Plotly.newPlot('sources_chart', [
+            { x: xLabels, y: data.income.earned, name: 'Earned Income', type: 'bar', marker: { color: colors.income.earned } },
+            { x: xLabels, y: data.income.ss, name: 'Social Security', type: 'bar', marker: { color: colors.income.ss } },
+            { x: xLabels, y: data.withdrawals.trad, name: 'From Trad.', type: 'bar', marker: { color: colors.trad.base } },
+            { x: xLabels, y: data.withdrawals.roth_basis, name: 'Roth (Basis)', type: 'bar', marker: { color: colors.roth.base } },
+            { x: xLabels, y: data.withdrawals.roth_growth, name: 'Roth (Growth)', type: 'bar', marker: { color: colors.roth.light } },
+            { x: xLabels, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar', marker: { color: colors.brokerage.base } },
+            { x: xLabels, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar', marker: { color: colors.brokerage.light } },
+            { x: xLabels, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar', marker: { color: colors.hsa.base } },
+            { x: xLabels, y: data.withdrawals.cash, name: 'From Cash', type: 'bar', marker: { color: colors.cash.base } }
+        ], {
+            ...commonLayout,
+            barmode: 'stack',
+            yaxis: { ...commonLayout.yaxis, title: 'Amount (Real $)' }
+        });
+
+        // 3. Market Chart
         Plotly.newPlot('market_chart', [
-            { x: xLabels, y: data.market.stocks, name: 'Stock Returns' },
-            { x: xLabels, y: data.market.bonds, name: 'Bond Returns' },
-            { x: xLabels, y: data.market.inflation, name: 'Inflation' }
+            { x: xLabels, y: data.market.stocks, name: 'Stocks', line: { color: '#2563eb' } },
+            { x: xLabels, y: data.market.bonds, name: 'Bonds', line: { color: '#94a3b8' } },
+            { x: xLabels, y: data.market.inflation, name: 'Inflation', line: { color: '#f43f5e', dash: 'dot' } }
         ], {
             ...commonLayout,
             yaxis: { title: 'Annual Rate', tickformat: ',.0%' }
         });
 
-        // Assets Chart
-        Plotly.newPlot('assets_chart', [
-            { x: xLabels, y: data.assets.total, name: 'Total Liquid Assets', line: { width: 4, color: 'black' } },
-            { x: xLabels, y: data.assets.traditional, name: 'Traditional' },
-            { x: xLabels, y: data.assets.roth, name: 'Roth' },
-            { x: xLabels, y: data.assets.hsa, name: 'HSA' },
-            { x: xLabels, y: data.assets.brokerage, name: 'Brokerage' }
-
-        ], {
-            ...commonLayout,
-            yaxis: { title: 'Balance (Real $)' }
-        });
-
-        // Sources Chart (Stacked)
-        Plotly.newPlot('sources_chart', [
-            { x: xLabels, y: data.income.earned, name: 'Earned Income', type: 'bar' },
-            { x: xLabels, y: data.income.ss, name: 'Social Security', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.trad, name: 'From Trad.', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.roth_basis, name: 'Roth (Basis)', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.roth_growth, name: 'Roth (Growth)', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.cash, name: 'From Cash Reserve', type: 'bar' }
-
-
-        ], {
-            ...commonLayout,
-            barmode: 'stack',
-            yaxis: { title: 'Amount (Real $)' }
-        });
-
-        // Expenses Chart (Stacked)
+        // 4. Expenses and Savings (All Savings = Base)
         Plotly.newPlot('expenses_chart', [
-            { x: xLabels, y: data.outflows.taxes, name: 'Taxes', type: 'bar', marker: { color: '#d62728' } },
-            { x: xLabels, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: '#ff7f0e' } },
-            { x: xLabels, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: '#2ca02c' } },
-            { x: xLabels, y: data.savings.to_hsa, name: 'HSA Savings', type: 'bar' },
-            { x: xLabels, y: data.savings.to_roth, name: 'Roth Ret Savings', type: 'bar' },
-            { x: xLabels, y: data.savings.to_trad, name: 'Trad Ret Savings', type: 'bar' },
-            { x: xLabels, y: data.savings.to_cash, name: 'Cash Savings', type: 'bar' },
-            { x: xLabels, y: data.savings.to_brokerage, name: 'Brokerage Savings', type: 'bar' }
-
+            { x: xLabels, y: data.outflows.taxes, name: 'Taxes', type: 'bar', marker: { color: colors.outflows.taxes } },
+            { x: xLabels, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: colors.outflows.mortgage } },
+            { x: xLabels, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: colors.outflows.spending } },
+            { x: xLabels, y: data.savings.to_hsa, name: 'to HSA', type: 'bar', marker: { color: colors.hsa.base } },
+            { x: xLabels, y: data.savings.to_roth, name: 'to Roth', type: 'bar', marker: { color: colors.roth.base } },
+            { x: xLabels, y: data.savings.to_trad, name: 'to Trad', type: 'bar', marker: { color: colors.trad.base } },
+            { x: xLabels, y: data.savings.to_cash, name: 'to Cash', type: 'bar', marker: { color: colors.cash.base } },
+            { x: xLabels, y: data.savings.to_brokerage, name: 'to Brokerage', type: 'bar', marker: { color: colors.brokerage.base } }
         ], {
             ...commonLayout,
             barmode: 'stack',
-            yaxis: { title: 'Amount (Real $)' }
+            yaxis: { ...commonLayout.yaxis, title: 'Amount (Real $)' }
         });
     </script>
 </body>
