@@ -81,7 +81,7 @@ def main():
         income_strat=BaristaRetirementWages(
             initial_salary=150000.0,
             barista_salary=20000,
-            barista_retirement_age=40,
+            barista_retirement_age=45,
             full_retirement_age=70,
         ),
         payroll_strat=MaximizeContributionsPayroll(

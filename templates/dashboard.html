@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Granular Financial Dashboard</title>
+    <title>Financial Dashboard</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         body {
@@ -73,7 +73,7 @@
         </div>
 
         <div class="chart-card">
-            <h2>Expense Breakdown (Outflows)</h2>
+            <h2>Expenses and Savings Breakdown (Outflows)</h2>
             <div id="expenses_chart" class="chart-div"></div>
         </div>
     </div>
@@ -81,7 +81,7 @@
     <script>
         const data = {{ data | tojson | safe }};
 
-        const xLabels = data.years.map((year, i) => `${year}<br>Age ${data.ages[i]}`);
+        const xLabels = data.years.map((year, i) => `${data.ages[i]}<br>${year}`);
 
         // Filter to show a tick only every 5 years
         const tickIndices = data.years.map((_, i) => i).filter(i => i % 5 === 0);
@@ -104,7 +104,7 @@
         Plotly.newPlot('market_chart', [
             { x: xLabels, y: data.market.stocks, name: 'Stock Returns' },
             { x: xLabels, y: data.market.bonds, name: 'Bond Returns' },
-            { x: xLabels, y: data.market.inflation, name: 'Inflation', line: { dash: 'dot' } }
+            { x: xLabels, y: data.market.inflation, name: 'Inflation' }
         ], {
             ...commonLayout,
             yaxis: { title: 'Annual Rate', tickformat: ',.0%' }
@@ -115,10 +115,12 @@
             { x: xLabels, y: data.assets.total, name: 'Total Liquid Assets', line: { width: 4, color: 'black' } },
             { x: xLabels, y: data.assets.traditional, name: 'Traditional' },
             { x: xLabels, y: data.assets.roth, name: 'Roth' },
+            { x: xLabels, y: data.assets.hsa, name: 'HSA' },
             { x: xLabels, y: data.assets.brokerage, name: 'Brokerage' }
+
         ], {
             ...commonLayout,
-            yaxis: { title: 'Balance ($)' }
+            yaxis: { title: 'Balance (Real $)' }
         });
 
         // Sources Chart (Stacked)
@@ -126,7 +128,8 @@
             { x: xLabels, y: data.income.earned, name: 'Earned Income', type: 'bar' },
             { x: xLabels, y: data.income.ss, name: 'Social Security', type: 'bar' },
             { x: xLabels, y: data.withdrawals.trad, name: 'From Trad.', type: 'bar' },
-            { x: xLabels, y: data.withdrawals.roth, name: 'From Roth', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.roth_basis, name: 'Roth (Basis)', type: 'bar' },
+            { x: xLabels, y: data.withdrawals.roth_growth, name: 'Roth (Growth)', type: 'bar' },
             { x: xLabels, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar' },
             { x: xLabels, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar' },
             { x: xLabels, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar' },
@@ -136,18 +139,24 @@
         ], {
             ...commonLayout,
             barmode: 'stack',
-            yaxis: { title: 'Amount ($)' }
+            yaxis: { title: 'Amount (Real $)' }
         });
 
         // Expenses Chart (Stacked)
         Plotly.newPlot('expenses_chart', [
             { x: xLabels, y: data.outflows.taxes, name: 'Taxes', type: 'bar', marker: { color: '#d62728' } },
             { x: xLabels, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: '#ff7f0e' } },
-            { x: xLabels, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: '#2ca02c' } }
+            { x: xLabels, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: '#2ca02c' } },
+            { x: xLabels, y: data.savings.to_hsa, name: 'HSA Savings', type: 'bar' },
+            { x: xLabels, y: data.savings.to_roth, name: 'Roth Ret Savings', type: 'bar' },
+            { x: xLabels, y: data.savings.to_trad, name: 'Trad Ret Savings', type: 'bar' },
+            { x: xLabels, y: data.savings.to_cash, name: 'Cash Savings', type: 'bar' },
+            { x: xLabels, y: data.savings.to_brokerage, name: 'Brokerage Savings', type: 'bar' }
+
         ], {
             ...commonLayout,
             barmode: 'stack',
-            yaxis: { title: 'Amount ($)' }
+            yaxis: { title: 'Amount (Real $)' }
         });
     </script>
 </body>
