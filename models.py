@@ -60,6 +60,16 @@ class FinancialState:
     mortgage_annual_payment: NominalCurrency = 0.0
 
     @property
+    def brokerage_basis_balance(self) -> NominalCurrency:
+        """The portion of the account that is basis."""
+        return min(self.taxable_brokerage_balance, self.taxable_brokerage_basis)
+
+    @property
+    def brokerage_growth_balance(self) -> NominalCurrency:
+        """The portion of the account that is growth."""
+        return self.taxable_brokerage_balance - self.brokerage_basis_balance
+
+    @property
     def roth_basis_balance(self) -> NominalCurrency:
         """Priority 1: The portion of the account that is basis."""
         return min(self.roth_retirement_balance, self.roth_basis)

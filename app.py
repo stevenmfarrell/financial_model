@@ -13,7 +13,8 @@ def dashboard():
             "years": df["year"].tolist(),
             "ages": df["age"].tolist(),
             "assets": {
-                "brokerage": df["state_taxable_brokerage_balance_real"].tolist(),
+                "brokerage_basis": df["state_brokerage_basis_balance_real"].tolist(),
+                "brokerage_growth": df["state_brokerage_growth_balance_real"].tolist(),
                 "traditional": df["state_traditional_retirement_balance_real"].tolist(),
                 "roth_basis": df["state_roth_basis_balance_real"].tolist(),
                 "roth_conversion": df[

@@ -85,9 +85,9 @@
         const colors = {
             cash: { base: '#64748b', light: '#cbd5e1' }, // Slate
             hsa: { base: '#cf1f45', light: '#fda4af' }, // Rose
-            roth: { base: '#a45ce6', light: '#d8b4fe' }, // Purple
+            roth: { base: '#a45ce6', light: '#c08bf7' }, // Purple
             trad: { base: '#e8804a', light: '#fdba74' }, // Orange
-            brokerage: { base: '#2563eb', light: '#93c5fd' }, // Blue
+            brokerage: { base: '#3b72eb', light: '#6b92e8' }, // Blue
             income: { earned: '#059669', ss: '#10b981' },
             outflows: {
                 taxes: '#000000', // hich contrast for importance
@@ -165,10 +165,17 @@
             },
             {
                 x: xLabels,
-                y: data.assets.brokerage,
-                name: 'Brokerage',
+                y: data.assets.brokerage_basis,
+                name: 'Brokerage (Basis)',
                 type: 'bar',
                 marker: { color: colors.brokerage.base }
+            },
+            {
+                x: xLabels,
+                y: data.assets.brokerage_growth,
+                name: 'Brokerage (Growth)',
+                type: 'bar',
+                marker: { color: colors.brokerage.light }
             },
             // Total Line (Scatter/Line overlay)
             {

@@ -1,10 +1,8 @@
-- Ladder rollover strategies
-- show csv in real dollars
-- monte carlo market conditions
 - half of market growth happens before, half after?
 - payroll deductions unrealistic in a baristaFIRE scenario
-- glide path rebalance should have different strategies for taxable/nontaxable
-- break when failing to resolve?
 - handle multiple mortgages (key value?)
 - handle multiple people, distinct social security
-- dashboards 
+- monte carlo convert to real dollars for comparison
+- dashboard for monte carlo scenarios (median, p5, etc?)
+- display a financial history as well
+- optimizer for tuning strategy parameters (like rebalancing strategy)
