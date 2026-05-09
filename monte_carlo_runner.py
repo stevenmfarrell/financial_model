@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 from typing import List
 from models import (
@@ -9,6 +11,8 @@ from models import (
 )
 from decisions_config import YearlyDecisionsConfiguration
 from simulation_runner import run_simulation
+
+type YearlyDecisionsConfigFactory = Callable[[], YearlyDecisionsConfiguration]
 
 
 class MonteCarloRunner:
@@ -23,14 +27,14 @@ class MonteCarloRunner:
         initial_personal: PersonalState,
         market_provider: MarketConditionsProvider,
         regulations_factory: RegulationsFactory,
-        config: YearlyDecisionsConfiguration,
+        decisions_strategy_factory: YearlyDecisionsConfigFactory,
     ):
         final_net_worths = []
         failure_ages = []
 
         for i in range(self.trials):
-            # The random_seed is passed directly to run_simulation,
-            # which passes it to the provider's __call__
+            # reinstantiate the decisions strategies fresh for each simulation run
+            decisions_strategy = decisions_strategy_factory()
             history = run_simulation(
                 years=years,
                 initial_world=initial_world,
@@ -38,7 +42,7 @@ class MonteCarloRunner:
                 initial_personal=initial_personal,
                 market_conditions_provider=market_provider,
                 regulations_factory=regulations_factory,
-                config=config,
+                config=decisions_strategy,
                 random_seed=i,
             )
 

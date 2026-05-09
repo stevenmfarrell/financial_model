@@ -23,7 +23,7 @@ from strategies.mortgage import FixedMortgage
 from strategies.payroll import MaximizeContributionsPayroll
 from strategies.rebalance import TaxAwareGlidePathRebalance
 from strategies.savings import WaterfallSavings
-from strategies.spending import InflationAdjustedSpending
+from strategies.spending import GuytonKlingerSpendingStrategy, InflationAdjustedSpending
 from strategies.income import BaristaRetirementWages
 from strategies.withdrawal import SequentialWithdrawal
 
@@ -77,32 +77,37 @@ def main():
     # )
 
     # 3. Instantiate the strategies
-    decisions_config = YearlyDecisionsConfiguration(
-        income_strat=BaristaRetirementWages(
-            initial_salary=150000.0,
-            barista_salary=50000,
-            barista_retirement_age=40,
-            full_retirement_age=70,
-        ),
-        payroll_strat=MaximizeContributionsPayroll(
-            match_401k_cap_percent=0.04,
-            match_hsa_amount=1250,
-            health_insurance_premium=2000,
-        ),
-        lifestyle_spending_strat=InflationAdjustedSpending(
-            base_spending_today_dollars=60000.0
-        ),
-        mortgage_strat=FixedMortgage(),
-        conversion_strat=FillTaxBracketConversion(0.12),
-        savings_strat=WaterfallSavings(target_cash_reserve=20000),
-        withdrawal_strat=SequentialWithdrawal(),
-        rebalance_strat=TaxAwareGlidePathRebalance(
-            glide_start_age=35,
-            glide_end_age=75,
-            initial_stock_ratio=0.8,
-            final_stock_ratio=0.05,
-        ),
-    )
+    def decisions_factory() -> YearlyDecisionsConfiguration:
+        decisions_config = YearlyDecisionsConfiguration(
+            income_strat=BaristaRetirementWages(
+                initial_salary=150000.0,
+                barista_salary=25000,
+                barista_retirement_age=40,
+                full_retirement_age=60,
+            ),
+            payroll_strat=MaximizeContributionsPayroll(
+                match_401k_cap_percent=0.04,
+                match_hsa_amount=1250,
+                health_insurance_premium=2000,
+            ),
+            lifestyle_spending_strat=GuytonKlingerSpendingStrategy(
+                activation_age=40,
+                base_spending_today_dollars=60000,
+                absolute_ceiling_today_dollars=100000,
+                absolute_floor_today_dollars=40000,
+            ),
+            mortgage_strat=FixedMortgage(),
+            conversion_strat=FillTaxBracketConversion(0.12),
+            savings_strat=WaterfallSavings(target_cash_reserve=20000),
+            withdrawal_strat=SequentialWithdrawal(),
+            rebalance_strat=TaxAwareGlidePathRebalance(
+                glide_start_age=35,
+                glide_end_age=40,
+                initial_stock_ratio=0.8,
+                final_stock_ratio=0.20,
+            ),
+        )
+        return decisions_config
 
     def run_monte_carlo():
         mc = MonteCarloRunner(trials=500)
@@ -113,7 +118,7 @@ def main():
             initial_personal=initial_personal,
             market_provider=market_provider,
             regulations_factory=regulations_factory,
-            config=decisions_config,
+            decisions_strategy_factory=decisions_factory,
         )
 
         print(f"Success Rate: {results['success_rate']:.1%}")
@@ -129,8 +134,8 @@ def main():
             initial_personal=initial_personal,
             market_conditions_provider=market_provider,
             regulations_factory=regulations_factory,
-            config=decisions_config,
-            random_seed=25,
+            config=decisions_factory(),
+            random_seed=26,
         )
 
         df = create_history_dataframe(history_tuples)
