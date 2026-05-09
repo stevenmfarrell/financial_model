@@ -22,6 +22,7 @@ def dashboard():
                 ].tolist(),
                 "roth_growth": df["state_roth_growth_balance_real"].tolist(),
                 "hsa": df["state_hsa_balance_real"].tolist(),
+                "cash": df["state_cash_balance_real"].tolist(),
                 "total": df["state_liquid_assets_real"].tolist(),
             },
             "withdrawals": {

@@ -23,6 +23,10 @@ class BankruptcyError(Exception):
     pass
 
 
+def get_six_month_rate(annual_rate: float) -> float:
+    return (annual_rate + 1) ** 0.5 - 1
+
+
 def grow_account(
     balance: float, stock_return: float, bond_return: float, stock_alloc: float
 ) -> float:
@@ -32,8 +36,18 @@ def grow_account(
     return balance * growth_factor
 
 
-def apply_market(financial: FinancialState, market: MarketConditions) -> FinancialState:
-    """Applies market growth to all accounts based on their stock/bond allocations, as well as inflation."""
+def apply_market_to_world(world: WorldState, market: MarketConditions) -> WorldState:
+    return replace(
+        world,
+        cumulative_inflation_index=world.cumulative_inflation_index
+        * (1 + market.annual_inflation_rate),
+    )
+
+
+def apply_market_to_financial_state(
+    financial: FinancialState, market: MarketConditions
+) -> FinancialState:
+    """Applies market growth to all accounts based on their stock/bond allocations"""
 
     def market_account_grow(balance: float, stock_alloc: float) -> float:
         return grow_account(
@@ -253,14 +267,6 @@ def simulate_year(
     activity. It takes a static 'Snapshot' of wealth on January 1st (BOY)
     and returns a new 'Snapshot' of wealth on December 31st (EOY).
 
-    The BOY/EOY Distinction:
-    - Input 'financial': Represents the balances as they exist on Jan 1st.
-      The caller is responsible for incrementing the 'year' and the
-      'personal.age' before passing them to this function.
-    - Output 'FinancialState': Represents the final settled balances after
-      market growth, earned income, taxes, spending, and rebalancing have
-      occurred throughout the duration of that year.
-
     Args:
         financial: The account balances and basis at the start of the year.
         personal: The user's demographic state (age, etc.) at the start of the year.
@@ -268,21 +274,29 @@ def simulate_year(
         ...[strategies]: Modular logic components following the Strategy Pattern.
 
     Returns:
-        A new FinancialState object representing the user's wealth at the
-        close of the business year.
+        The states at the end of the year
     """
-
-    financial = apply_market(financial, market)
-    world = replace(
-        world,
-        cumulative_inflation_index=world.cumulative_inflation_index
-        * (1 + market.annual_inflation_rate),
+    six_month_market = MarketConditions(
+        annual_inflation_rate=get_six_month_rate(market.annual_inflation_rate),
+        annual_bond_return=get_six_month_rate(market.annual_bond_return),
+        annual_cash_return=get_six_month_rate(market.annual_cash_return),
+        annual_home_appreciation_rate=get_six_month_rate(
+            market.annual_home_appreciation_rate
+        ),
+        annual_stock_return=get_six_month_rate(market.annual_stock_return),
     )
+
+    regulations = regulations_factory(
+        world
+    )  # tax limits are determined before the current year's inflation
+    world = apply_market_to_world(world, market)  # update inflation
+
+    # Simulate six months of market growth before running simulation
+    financial = apply_market_to_financial_state(financial, six_month_market)
 
     # Ensure our 'roth_basis' accurately reflects conversions settled for THIS year.
     financial = perform_roth_maintenance(financial, world)
 
-    regulations = regulations_factory(world)
     context = SimulationContext(world, personal, financial, regulations)
     decisions = YearlyDecisionsPlan()
     overall_income_strat = CombinedIncome(config.income_strat, SocialSecurityIncome())
@@ -303,6 +317,9 @@ def simulate_year(
     decisions = config.savings_strat(context, decisions)
 
     financial = apply_decisions_to_financial_state(world, financial, decisions)
+
+    # Simulate last six months of market growth for the year
+    financial = apply_market_to_financial_state(financial, six_month_market)
 
     # 4. Final Rebalancing
     financial = config.rebalance_strat(

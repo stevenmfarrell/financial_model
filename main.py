@@ -80,8 +80,8 @@ def main():
     decisions_config = YearlyDecisionsConfiguration(
         income_strat=BaristaRetirementWages(
             initial_salary=150000.0,
-            barista_salary=20000,
-            barista_retirement_age=45,
+            barista_salary=50000,
+            barista_retirement_age=40,
             full_retirement_age=70,
         ),
         payroll_strat=MaximizeContributionsPayroll(
@@ -97,7 +97,10 @@ def main():
         savings_strat=WaterfallSavings(target_cash_reserve=20000),
         withdrawal_strat=SequentialWithdrawal(),
         rebalance_strat=TaxAwareGlidePathRebalance(
-            glide_start_age=35, glide_end_age=45, final_stock_ratio=0.4
+            glide_start_age=35,
+            glide_end_age=75,
+            initial_stock_ratio=0.8,
+            final_stock_ratio=0.05,
         ),
     )
 

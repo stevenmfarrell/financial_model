@@ -1,8 +1,11 @@
-- half of market growth happens before, half after?
+- better handling of a cash buffer
+- variable expenses in a downturn
+- health expenses not really modeled yet (healthcare, medicare, etc)
+- portion of brokerage yield is dividends and should be taxed differently
+- convert to real dollars in output (not just for csv) to allow for better comparison across monte carlo simulations, optimizer
 - payroll deductions unrealistic in a baristaFIRE scenario
 - handle multiple mortgages (key value?)
 - handle multiple people, distinct social security
-- monte carlo convert to real dollars for comparison
 - dashboard for monte carlo scenarios (median, p5, etc?)
 - display a financial history as well
 - optimizer for tuning strategy parameters (like rebalancing strategy)
