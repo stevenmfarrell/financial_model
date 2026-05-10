@@ -2,15 +2,12 @@ import numpy as np
 
 from decisions_config import YearlyDecisionsConfiguration
 from market.providers import (
-    ConstantMarketProvider,
     RandomHistoricalMarketProvider,
-    SequentialHistoricalMarketProvider,
 )
 from models import (
     FinancialState,
     WorldState,
     PersonalState,
-    MarketConditions,
 )
 from monte_carlo_runner import MonteCarloRunner
 from regulatory_environment import regulations_factory
@@ -21,9 +18,9 @@ from output import create_history_dataframe
 from strategies.conversion import FillTaxBracketConversion
 from strategies.mortgage import FixedMortgage
 from strategies.payroll import MaximizeContributionsPayroll
-from strategies.rebalance import TaxAwareGlidePathRebalance
+from strategies.rebalance import LinearGlidePath, TaxAwareGlidePathRebalance
 from strategies.savings import WaterfallSavings
-from strategies.spending import GuytonKlingerSpendingStrategy, InflationAdjustedSpending
+from strategies.spending import GuytonKlingerSpendingStrategy
 from strategies.income import BaristaRetirementWages
 from strategies.withdrawal import SequentialWithdrawal
 
@@ -49,7 +46,7 @@ def main():
     initial_financial = FinancialState(
         taxable_brokerage_balance=287000.0,
         taxable_brokerage_basis=150000.0,
-        taxable_brokerage_stock_allocation=0.8,
+        taxable_brokerage_stock_allocation=1.0,
         cash_balance=20000.0,
         traditional_retirement_balance=455000.0 * 0.65,
         traditional_retirement_stock_allocation=0.9,
@@ -101,10 +98,12 @@ def main():
             savings_strat=WaterfallSavings(target_cash_reserve=20000),
             withdrawal_strat=SequentialWithdrawal(),
             rebalance_strat=TaxAwareGlidePathRebalance(
-                glide_start_age=35,
-                glide_end_age=40,
-                initial_stock_ratio=0.8,
-                final_stock_ratio=0.20,
+                LinearGlidePath(
+                    glide_start_age=35,
+                    glide_end_age=50,
+                    initial_stock_ratio=0.8,
+                    final_stock_ratio=0.50,
+                )
             ),
         )
         return decisions_config
