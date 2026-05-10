@@ -13,10 +13,12 @@ class WorldState:
 @dataclass(frozen=True)
 class MarketConditions:
     annual_inflation_rate: float
-    annual_stock_return: float
-    annual_bond_return: float
+    annual_total_stock_return: float  # includes dividend reinvestment
+    annual_total_bond_return: float
     annual_cash_return: float
     annual_home_appreciation_rate: float
+    annual_stock_dividend_yield: float = 0.01  # TODO use historical
+    annual_bond_yield: float = 0.03  # TODO use historical
 
 
 @dataclass(frozen=True)
@@ -124,6 +126,8 @@ class YearlyDecisionsPlan:
     gross_earned_income: NominalCurrency = 0
     social_security_received: NominalCurrency = 0
     other_taxable_income: NominalCurrency = 0  # e.g., Bonuses or 1099 work
+    ordinary_dividends_received: NominalCurrency = 0
+    qualified_dividends_received: NominalCurrency = 0
 
     # --- Pre-Tax Payroll Deductions ---
     payroll_to_trad_401k: NominalCurrency = 0
@@ -176,23 +180,17 @@ class YearlyDecisionsPlan:
         )
 
     @property
-    def net_salary_cash_flow(self) -> NominalCurrency:
-        """The actual 'take-home' cash from the paycheck after all deductions and taxes."""
-        return (
-            self.gross_earned_income
-            + self.social_security_received
-            + self.other_taxable_income
-            - self.payroll_to_trad_401k
-            - self.payroll_to_hsa
-            - self.payroll_to_health_premiums
-            - self.payroll_to_roth_401k
-            - self.to_taxes
-        )
-
-    @property
     def current_cash_shortfall(self) -> NominalCurrency:
         """If positive, you need to withdraw. If negative, you have a surplus."""
         return self.total_outflows - self.total_inflows
+
+    @property
+    def dividends_received(self) -> NominalCurrency:
+        return self.ordinary_dividends_received + self.qualified_dividends_received
+
+    @property
+    def to_healthcare_spending(self) -> NominalCurrency:
+        return self.payroll_to_health_premiums
 
     @property
     def total_inflows(self) -> NominalCurrency:
@@ -200,13 +198,14 @@ class YearlyDecisionsPlan:
             self.gross_earned_income
             + self.social_security_received
             + self.other_taxable_income
+            + self.ordinary_dividends_received
+            + self.qualified_dividends_received
             + self.from_traditional_retirement
             + self.from_roth_retirement
             + self.from_taxable_brokerage_basis
             + self.from_taxable_brokerage_growth
             + self.from_hsa_nonmedical
             + self.from_cash_reserve
-            + self.trad_to_roth_conversion
         )
 
     @property
@@ -222,7 +221,6 @@ class YearlyDecisionsPlan:
             + self.to_roth_ira
             + self.to_brokerage
             + self.to_cash_reserve
-            + self.trad_to_roth_conversion
         )
 
     @property
@@ -267,6 +265,7 @@ class RegulatoryEnvironment(Protocol):
 @dataclass(frozen=True)
 class SimulationContext:
     world: WorldState
+    market: MarketConditions
     personal: PersonalState
     financial: FinancialState
     regulations: RegulatoryEnvironment

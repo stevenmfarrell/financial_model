@@ -52,7 +52,6 @@ class GuytonKlingerSpendingStrategy(LifestyleSpendingStrategy):
         self.adjustment_increase = adjustment_increase
         self.apply_portfolio_rule = apply_portfolio_rule
 
-        # State tracked for a single Monte Carlo trial
         self._current_nominal_spending = base_spending_today_dollars
         self._previous_inflation_index = 1.0
         self._initial_withdrawal_rate: Optional[float] = None

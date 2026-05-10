@@ -15,7 +15,7 @@ def load_market_conditions_from_csv(
     Reads a CSV of yearly market data and returns a dictionary keyed by year.
 
     Expected CSV Headers:
-    year, annual_inflation_rate, annual_stock_return, annual_bond_return,
+    year, annual_inflation_rate, annual_total_stock_return, annual_total_bond_return,
     annual_cash_return, annual_home_appreciation_rate
     """
     market_conditions_map: Dict[int, MarketConditions] = {}
@@ -30,8 +30,8 @@ def load_market_conditions_from_csv(
             # Instantiate the MarketConditions dataclass for that year
             market_conditions_map[year] = MarketConditions(
                 annual_inflation_rate=float(row["annual_inflation_rate"]),
-                annual_stock_return=float(row["annual_stock_return"]),
-                annual_bond_return=float(row["annual_bond_return"]),
+                annual_total_stock_return=float(row["annual_total_stock_return"]),
+                annual_total_bond_return=float(row["annual_total_bond_return"]),
                 annual_cash_return=float(row["annual_cash_return"]),
                 annual_home_appreciation_rate=float(
                     row["annual_home_appreciation_rate"]

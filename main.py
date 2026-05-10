@@ -69,8 +69,8 @@ def main():
     # market_provider = ConstantMarketProvider(
     #     MarketConditions(
     #         annual_inflation_rate=0.02,
-    #         annual_stock_return=0.07,
-    #         annual_bond_return=0.04,
+    #         annual_total_stock_return=0.07,
+    #         annual_total_bond_return=0.04,
     #         annual_cash_return=0.01,
     #         annual_home_appreciation_rate=0.02,
     #     )

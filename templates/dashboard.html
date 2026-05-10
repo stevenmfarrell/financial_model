@@ -84,10 +84,10 @@
         // --- Simplified Color Palette (Base & Light only) ---
         const colors = {
             cash: { base: '#64748b', light: '#cbd5e1' }, // Slate
-            hsa: { base: '#cf1f45', light: '#fda4af' }, // Rose
+            hsa: { base: '#d9254c', light: '#fda4af', dark: "#99122f" }, // Rose
             roth: { base: '#a45ce6', light: '#c08bf7' }, // Purple
             trad: { base: '#e8804a', light: '#fdba74' }, // Orange
-            brokerage: { base: '#3b72eb', light: '#6b92e8' }, // Blue
+            brokerage: { base: '#3b72eb', light: '#6b92e8', dark: '#224dab' }, // Blue
             income: { earned: '#059669', ss: '#10b981' },
             outflows: {
                 taxes: '#000000', // hich contrast for importance
@@ -205,10 +205,18 @@
             { x: xLabels, y: data.withdrawals.trad, name: 'From Trad.', type: 'bar', marker: { color: colors.trad.base } },
             { x: xLabels, y: data.withdrawals.roth_basis, name: 'Roth (Basis)', type: 'bar', marker: { color: colors.roth.base } },
             { x: xLabels, y: data.withdrawals.roth_growth, name: 'Roth (Growth)', type: 'bar', marker: { color: colors.roth.light } },
+            { x: xLabels, y: data.income.dividends, name: 'Dividends/Interest', type: 'bar', marker: { color: colors.brokerage.dark } },
             { x: xLabels, y: data.withdrawals.brokerage_basis, name: 'Brokerage (Basis)', type: 'bar', marker: { color: colors.brokerage.base } },
             { x: xLabels, y: data.withdrawals.brokerage_growth, name: 'Brokerage (Growth)', type: 'bar', marker: { color: colors.brokerage.light } },
             { x: xLabels, y: data.withdrawals.hsa, name: 'From HSA', type: 'bar', marker: { color: colors.hsa.base } },
-            { x: xLabels, y: data.withdrawals.cash, name: 'From Cash', type: 'bar', marker: { color: colors.cash.base } }
+            { x: xLabels, y: data.withdrawals.cash, name: 'From Cash', type: 'bar', marker: { color: colors.cash.base } },
+            {
+                x: xLabels,
+                y: data.withdrawals.total,
+                name: 'Total Inflow',
+                mode: 'lines',
+                line: { width: 3, color: '#000' }
+            }
         ], {
             ...commonLayout,
             barmode: 'stack',
@@ -230,11 +238,19 @@
             { x: xLabels, y: data.outflows.taxes, name: 'Taxes', type: 'bar', marker: { color: colors.outflows.taxes } },
             { x: xLabels, y: data.outflows.mortgage, name: 'Mortgage', type: 'bar', marker: { color: colors.outflows.mortgage } },
             { x: xLabels, y: data.outflows.spending, name: 'Spending', type: 'bar', marker: { color: colors.outflows.spending } },
+            { x: xLabels, y: data.outflows.healthcare, name: 'Healthcare', type: 'bar', marker: { color: colors.hsa.dark } },
             { x: xLabels, y: data.savings.to_hsa, name: 'to HSA', type: 'bar', marker: { color: colors.hsa.base } },
             { x: xLabels, y: data.savings.to_trad, name: 'to Trad', type: 'bar', marker: { color: colors.trad.base } },
             { x: xLabels, y: data.savings.to_roth, name: 'to Roth', type: 'bar', marker: { color: colors.roth.base } },
             { x: xLabels, y: data.savings.to_cash, name: 'to Cash', type: 'bar', marker: { color: colors.cash.base } },
-            { x: xLabels, y: data.savings.to_brokerage, name: 'to Brokerage', type: 'bar', marker: { color: colors.brokerage.base } }
+            { x: xLabels, y: data.savings.to_brokerage, name: 'to Brokerage', type: 'bar', marker: { color: colors.brokerage.base } },
+            {
+                x: xLabels,
+                y: data.outflows.total,
+                name: 'Total Outflow',
+                mode: 'lines',
+                line: { width: 3, color: '#000' }
+            }
         ], {
             ...commonLayout,
             barmode: 'stack',

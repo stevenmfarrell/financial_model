@@ -39,11 +39,14 @@ def dashboard():
                 ].tolist(),
                 "hsa": df["decisions_from_hsa_nonmedical_real"].tolist(),
                 "cash": df["decisions_from_cash_reserve_real"].tolist(),
+                "total": df["decisions_total_inflows_real"].tolist(),
             },
             "outflows": {
                 "taxes": df["decisions_to_taxes_real"].tolist(),
                 "mortgage": df["decisions_to_mortgage_real"].tolist(),
                 "spending": df["decisions_to_lifestyle_spending_real"].tolist(),
+                "healthcare": df["decisions_to_healthcare_spending_real"].tolist(),
+                "total": df["decisions_total_outflows_real"].tolist(),
             },
             "savings": {
                 "to_hsa": df["decisions_payroll_to_hsa_real"].tolist(),
@@ -55,11 +58,12 @@ def dashboard():
             "income": {
                 "earned": df["decisions_gross_earned_income_real"].tolist(),
                 "ss": df["decisions_social_security_received_real"].tolist(),
+                "dividends": df["decisions_dividends_received_real"].tolist(),
             },
             "market": {
                 "inflation": df["mkt_annual_inflation_rate"].tolist(),
-                "stocks": df["mkt_annual_stock_return"].tolist(),
-                "bonds": df["mkt_annual_bond_return"].tolist(),
+                "stocks": df["mkt_annual_total_stock_return"].tolist(),
+                "bonds": df["mkt_annual_total_bond_return"].tolist(),
             },
         }
 

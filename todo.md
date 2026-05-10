@@ -1,8 +1,8 @@
 - better handling of a cash buffer
-- variable expenses in a downturn
 - health expenses not really modeled yet (healthcare, medicare, etc)
-- portion of brokerage yield is dividends and should be taxed differently
+- you can't actually just rebalance taxable brokerage stock/bond ratio without incurring taxes
 - convert to real dollars in output (not just for csv) to allow for better comparison across monte carlo simulations, optimizer
+- confirm if historical market rates are "total" or "price" (ie do they include dividends or not)
 - payroll deductions unrealistic in a baristaFIRE scenario
 - handle multiple mortgages (key value?)
 - handle multiple people, distinct social security

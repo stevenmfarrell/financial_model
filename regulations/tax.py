@@ -121,7 +121,8 @@ class InflationTrackingFederalTaxCalculator(RegulatoryCalculator):
         # --- 2. Build IncomeSources Dataclass ---
         income = IncomeSources(
             wages=plan.gross_earned_income,
-            interest_and_dividends=0,  # TODO not modeled
+            ordinary_interest_and_dividends=plan.ordinary_dividends_received,
+            qualified_dividends=plan.qualified_dividends_received,
             short_term_gains=0,  # TODO not modeled
             long_term_gains=plan.from_taxable_brokerage_growth,
         )
@@ -292,7 +293,8 @@ class InflationTrackingTaxableIncomeCalculator(RegulatoryCalculator):
 
         income = IncomeSources(
             wages=plan.gross_earned_income,
-            interest_and_dividends=0,  # TODO implement,
+            ordinary_interest_and_dividends=plan.ordinary_dividends_received,
+            qualified_dividends=plan.qualified_dividends_received,
             short_term_gains=0,  # TODO implement
             long_term_gains=plan.from_taxable_brokerage_growth,
         )

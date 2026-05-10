@@ -10,7 +10,8 @@ NIIT_THRESHOLD_MFJ = 250000.0
 class IncomeSources:
     wages: float  # W-2 Income (Subject to FICA)
     # business_income: float  # not currently dealing with self employment
-    interest_and_dividends: float  # Ordinary income, BUT is NII
+    ordinary_interest_and_dividends: float  # Ordinary progressive rates, AND is NII
+    qualified_dividends: float  # LTCG rates, AND is NII
     short_term_gains: float  # Ordinary income, BUT is NII
     long_term_gains: float  # Special brackets, AND is NII
 
@@ -48,7 +49,7 @@ def calculate_federal_taxable_wages(
 
 def calculate_ordinary_adjusted_gross_income(
     federal_taxable_wages: float,
-    income: IncomeSources,  # Added the dataclass here
+    income: IncomeSources,
     traditional_withdrawals: float,
     roth_earnings_withdrawals: float,
     hsa_non_medical_withdrawals: float,
@@ -68,7 +69,8 @@ def calculate_ordinary_adjusted_gross_income(
     base_taxable = (
         federal_taxable_wages
         # + income.business_income
-        + income.interest_and_dividends
+        + income.ordinary_interest_and_dividends
+        + income.qualified_dividends
         + income.short_term_gains
         + traditional_withdrawals
         + taxable_roth
@@ -109,8 +111,9 @@ def calculate_taxable_segments(
     ordinary_taxable = max(0.0, ordinary_agi - standard_deduction)
     unused_deduction = max(0.0, standard_deduction - ordinary_agi)
 
-    # Pull long-term gains directly from the dataclass
-    taxable_ltcg = max(0.0, income.long_term_gains - unused_deduction)
+    # Combine LTCG and Qualified Dividends for preferential tax treatment
+    preferential_income = income.long_term_gains + income.qualified_dividends
+    taxable_ltcg = max(0.0, preferential_income - unused_deduction)
 
     return TaxableIncomeBreakdown(
         ordinary_taxable=ordinary_taxable,
@@ -142,7 +145,9 @@ def get_net_investment_income(income: IncomeSources, taxable_ltcg: float) -> flo
     segments function to ensure we don't tax gains that were absorbed
     by the standard deduction.
     """
-    return income.interest_and_dividends + income.short_term_gains + taxable_ltcg
+    return (
+        income.ordinary_interest_and_dividends + income.short_term_gains + taxable_ltcg
+    )
 
 
 def calculate_capital_gains_tax(

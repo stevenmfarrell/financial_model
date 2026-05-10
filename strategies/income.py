@@ -69,32 +69,6 @@ class BaristaRetirementWages(IncomeStrategy):
         return replace(plan, gross_earned_income=nominal_income)
 
 
-class CombinedIncome(IncomeStrategy):
-    def __init__(self, *strats: IncomeStrategy):
-        self.strats = strats
-
-    def __call__(
-        self,
-        context: SimulationContext,
-        plan: YearlyDecisionsPlan,
-    ) -> YearlyDecisionsPlan:
-        gross_earned_income = 0
-        other_taxable_income = 0
-        social_security_received = 0
-        for strat in self.strats:
-            result = strat(context, plan)
-            gross_earned_income += result.gross_earned_income
-            other_taxable_income += result.other_taxable_income
-            social_security_received += result.social_security_received
-
-        return replace(
-            plan,
-            gross_earned_income=gross_earned_income,
-            social_security_received=social_security_received,
-            other_taxable_income=other_taxable_income,
-        )
-
-
 class SocialSecurityIncome(IncomeStrategy):
     """
     Models income received by Social Security
@@ -109,3 +83,32 @@ class SocialSecurityIncome(IncomeStrategy):
             context, plan
         )
         return replace(plan, social_security_received=social_security_received)
+
+
+class InvestmentIncomeStrategy(IncomeStrategy):
+    """Get income from interest, dividends and bond yields in taxable accounts. Tax advantaged accounts are not considered."""
+
+    # TODO cash interest reserves should count here
+    def __call__(
+        self, context: SimulationContext, decisions: YearlyDecisionsPlan
+    ) -> YearlyDecisionsPlan:
+        financial = context.financial
+        market = context.market
+        brokerage_stock_dividends = (
+            financial.taxable_brokerage_balance
+            * financial.taxable_brokerage_stock_allocation
+            * market.annual_stock_dividend_yield
+        )
+        brokerage_bond_yield_cash = (
+            financial.taxable_brokerage_balance
+            * (1 - financial.taxable_brokerage_stock_allocation)
+            * market.annual_stock_dividend_yield
+        )
+        cash_interest = market.annual_cash_return * financial.cash_balance
+        return replace(
+            decisions,
+            ordinary_dividends_received=0.05 * brokerage_stock_dividends
+            + brokerage_bond_yield_cash
+            + cash_interest,
+            qualified_dividends_received=0.95 * brokerage_stock_dividends,
+        )

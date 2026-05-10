@@ -1,4 +1,4 @@
-year,annual_inflation_rate,annual_stock_return,annual_bond_return,annual_home_appreciation_rate,annual_cash_return
+year,annual_inflation_rate,annual_total_stock_return,annual_total_bond_return,annual_home_appreciation_rate,annual_cash_return
 1928,-0.017,0.3788,0.0308,0.0322,.01
 1929,0.000,-0.1191,0.0316,0.0302,.01
 1930,-0.023,-0.2848,0.0455,0.0054,.01

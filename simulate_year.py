@@ -14,7 +14,10 @@ from models import (
     YearlyDecisionsPlan,
     YearlyMetrics,
 )
-from strategies.income import CombinedIncome, SocialSecurityIncome
+from strategies.income import (
+    InvestmentIncomeStrategy,
+    SocialSecurityIncome,
+)
 
 
 class BankruptcyError(Exception):
@@ -49,29 +52,45 @@ def apply_market_to_financial_state(
 ) -> FinancialState:
     """Applies market growth to all accounts based on their stock/bond allocations"""
 
-    def market_account_grow(balance: float, stock_alloc: float) -> float:
-        return grow_account(
-            balance, market.annual_stock_return, market.annual_bond_return, stock_alloc
+    brokerage_stock_price_return = (
+        (
+            (1 + market.annual_total_stock_return)
+            / (1 + market.annual_stock_dividend_yield)
         )
+        - 1
+    )  # portion of brokerage yield is dividends, does not necessarily go into brokerage growth
+
+    brokerage_bond_price_return = (
+        ((1 + market.annual_total_bond_return) / (1 + market.annual_bond_yield)) - 1
+    )  # portion of brokerage bond is distributions, does not necessarily go into brokerage growth
 
     return replace(
         financial,
-        taxable_brokerage_balance=market_account_grow(
+        taxable_brokerage_balance=grow_account(
             financial.taxable_brokerage_balance,
+            brokerage_stock_price_return,
+            brokerage_bond_price_return,
             financial.taxable_brokerage_stock_allocation,
         ),
-        traditional_retirement_balance=market_account_grow(
+        traditional_retirement_balance=grow_account(
             financial.traditional_retirement_balance,
+            market.annual_total_stock_return,
+            market.annual_total_bond_return,
             financial.traditional_retirement_stock_allocation,
         ),
-        roth_retirement_balance=market_account_grow(
+        roth_retirement_balance=grow_account(
             financial.roth_retirement_balance,
+            market.annual_total_stock_return,
+            market.annual_total_bond_return,
             financial.roth_retirement_stock_allocation,
         ),
-        hsa_balance=market_account_grow(
-            financial.hsa_balance, financial.hsa_stock_allocation
+        hsa_balance=grow_account(
+            financial.hsa_balance,
+            market.annual_total_stock_return,
+            market.annual_total_bond_return,
+            financial.hsa_stock_allocation,
         ),
-        cash_balance=financial.cash_balance * (1 + market.annual_cash_return),
+        cash_balance=financial.cash_balance,  # cash interest is income in the yearly inflows. Don't double count by applying it here
         primary_residence_value=financial.primary_residence_value
         * (1 + market.annual_home_appreciation_rate),
     )
@@ -278,12 +297,16 @@ def simulate_year(
     """
     six_month_market = MarketConditions(
         annual_inflation_rate=get_six_month_rate(market.annual_inflation_rate),
-        annual_bond_return=get_six_month_rate(market.annual_bond_return),
+        annual_total_bond_return=get_six_month_rate(market.annual_total_bond_return),
         annual_cash_return=get_six_month_rate(market.annual_cash_return),
         annual_home_appreciation_rate=get_six_month_rate(
             market.annual_home_appreciation_rate
         ),
-        annual_stock_return=get_six_month_rate(market.annual_stock_return),
+        annual_stock_dividend_yield=get_six_month_rate(
+            market.annual_stock_dividend_yield
+        ),
+        annual_bond_yield=get_six_month_rate(market.annual_bond_yield),
+        annual_total_stock_return=get_six_month_rate(market.annual_total_stock_return),
     )
 
     regulations = regulations_factory(
@@ -297,10 +320,12 @@ def simulate_year(
     # Ensure our 'roth_basis' accurately reflects conversions settled for THIS year.
     financial = perform_roth_maintenance(financial, world)
 
-    context = SimulationContext(world, personal, financial, regulations)
+    context = SimulationContext(world, market, personal, financial, regulations)
     decisions = YearlyDecisionsPlan()
-    overall_income_strat = CombinedIncome(config.income_strat, SocialSecurityIncome())
-    decisions = overall_income_strat(context, decisions)
+
+    decisions = InvestmentIncomeStrategy()(context, decisions)
+    decisions = SocialSecurityIncome()(context, decisions)
+    decisions = config.income_strat(context, decisions)
     decisions = config.payroll_strat(context, decisions)
     decisions = config.mortgage_strat(context, decisions)
     decisions = config.lifestyle_spending_strat(context, decisions)
@@ -323,7 +348,7 @@ def simulate_year(
 
     # 4. Final Rebalancing
     financial = config.rebalance_strat(
-        SimulationContext(world, personal, financial, regulations)
+        SimulationContext(world, market, personal, financial, regulations)
     )
 
     # Person will have incremented in age during the year
@@ -335,7 +360,7 @@ def simulate_year(
     )
 
     metrics = get_yearly_metrics(
-        SimulationContext(world, personal, financial, regulations), decisions
+        SimulationContext(world, market, personal, financial, regulations), decisions
     )
 
     return world, financial, personal, metrics, decisions
