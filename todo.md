@@ -1,7 +1,6 @@
 - better handling of a cash buffer
 - health expenses not really modeled yet (healthcare, medicare, etc)
 - better tracking of stock/bond ratios in taxable brokerage. Right now there's no way to keep them balanced.
-- convert to real dollars in output (not just for csv) to allow for better comparison across monte carlo simulations, optimizer
 - confirm if historical market rates are "total" or "price" (ie do they include dividends or not)
 - payroll deductions unrealistic in a baristaFIRE scenario
 - handle multiple mortgages (key value?)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Annotated, Callable, Literal, Optional, Protocol, Tuple
 
-type NominalCurrency = Annotated[float, "is_nominal_currency"]
+type Currency = Annotated[float, "is_currency"]
 
 
 @dataclass(frozen=True)
@@ -25,66 +25,66 @@ class MarketConditions:
 class PersonalState:
     age: int
     marital_status: Literal["married", "single"]
-    real_earnings_history: tuple[NominalCurrency, ...] = ()
+    real_earnings_history: tuple[Currency, ...] = ()
     social_security_claiming_age: int = 67
 
 
 @dataclass(frozen=True)
 class FinancialState:
-    taxable_brokerage_balance: NominalCurrency = 0.0
-    taxable_brokerage_basis: NominalCurrency = 0.0
+    taxable_brokerage_balance: Currency = 0.0
+    taxable_brokerage_basis: Currency = 0.0
     taxable_brokerage_stock_allocation: float = (
         0.0  # Fraction of brokerage balance in stocks
     )
-    cash_balance: NominalCurrency = 0.0
+    cash_balance: Currency = 0.0
 
     # --- Tax-Advantaged Accounts ---
-    traditional_retirement_balance: NominalCurrency = 0.0
+    traditional_retirement_balance: Currency = 0.0
     traditional_retirement_stock_allocation: float = (
         0.0  # Fraction of retirement balance in stocks
     )
-    roth_retirement_balance: NominalCurrency = 0.0
-    roth_basis: NominalCurrency = 0.0  # amount directly contributed or converted funds that have passed the required settling period. Might in fact be higher than the current balance. For liquidity, see roth_basis_balance
+    roth_retirement_balance: Currency = 0.0
+    roth_basis: Currency = 0.0  # amount directly contributed or converted funds that have passed the required settling period. Might in fact be higher than the current balance. For liquidity, see roth_basis_balance
 
     roth_conversion_recent: Tuple[
-        Tuple[int, NominalCurrency], ...
+        Tuple[int, Currency], ...
     ] = ()  # (year, amount) tuples, like ((2025, 30000), (2026, 35000))
     roth_retirement_stock_allocation: float = (
         0.0  # Fraction of retirement balance in stocks
     )
-    hsa_balance: NominalCurrency = 0.0
+    hsa_balance: Currency = 0.0
     hsa_stock_allocation: float = 0.0  # Fraction of HSA balance in stocks
 
     # --- Illiquid / Liabilities ---
-    primary_residence_value: NominalCurrency = 0.0
-    mortgage_principal: NominalCurrency = 0.0
+    primary_residence_value: Currency = 0.0
+    mortgage_principal: Currency = 0.0
     mortgage_interest_rate: float = 0.0
-    mortgage_annual_payment: NominalCurrency = 0.0
+    mortgage_annual_payment: Currency = 0.0
 
     @property
-    def brokerage_basis_balance(self) -> NominalCurrency:
+    def brokerage_basis_balance(self) -> Currency:
         """The portion of the account that is basis."""
         return min(self.taxable_brokerage_balance, self.taxable_brokerage_basis)
 
     @property
-    def brokerage_growth_balance(self) -> NominalCurrency:
+    def brokerage_growth_balance(self) -> Currency:
         """The portion of the account that is growth."""
         return self.taxable_brokerage_balance - self.brokerage_basis_balance
 
     @property
-    def roth_basis_balance(self) -> NominalCurrency:
+    def roth_basis_balance(self) -> Currency:
         """Priority 1: The portion of the account that is basis."""
         return min(self.roth_retirement_balance, self.roth_basis)
 
     @property
-    def roth_conversion_recent_balance(self) -> NominalCurrency:
+    def roth_conversion_recent_balance(self) -> Currency:
         """Priority 2: The portion of the remaining balance that is recent conversions."""
         conversion_total = sum(amount for _, amount in self.roth_conversion_recent)
         remaining = self.roth_retirement_balance - self.roth_basis_balance
         return min(remaining, conversion_total)
 
     @property
-    def roth_growth_balance(self) -> NominalCurrency:
+    def roth_growth_balance(self) -> Currency:
         """Priority 3: Whatever is left is growth."""
         # No min/max needed here; it naturally settles at 0 or higher.
         return (
@@ -94,7 +94,7 @@ class FinancialState:
         )
 
     @property
-    def liquid_assets(self) -> NominalCurrency:
+    def liquid_assets(self) -> Currency:
         """Calculates total assets excluding the primary residence."""
         return (
             self.taxable_brokerage_balance
@@ -105,17 +105,17 @@ class FinancialState:
         )
 
     @property
-    def total_assets(self) -> NominalCurrency:
+    def total_assets(self) -> Currency:
         """Calculates the sum of all asset accounts."""
         return self.liquid_assets + self.primary_residence_value
 
     @property
-    def total_liabilities(self) -> NominalCurrency:
+    def total_liabilities(self) -> Currency:
         """Calculates total debt, including mortgage and any accrued tax."""
         return self.mortgage_principal
 
     @property
-    def net_worth(self) -> NominalCurrency:
+    def net_worth(self) -> Currency:
         """The total value of all assets minus all liabilities."""
         return self.total_assets - self.total_liabilities
 
@@ -123,55 +123,55 @@ class FinancialState:
 @dataclass(frozen=True)
 class YearlyDecisionsPlan:
     # --- Inflows ---
-    gross_earned_income: NominalCurrency = 0
-    social_security_received: NominalCurrency = 0
-    other_taxable_income: NominalCurrency = 0  # e.g., Bonuses or 1099 work
-    ordinary_dividends_received: NominalCurrency = 0
-    qualified_dividends_received: NominalCurrency = 0
+    gross_earned_income: Currency = 0
+    social_security_received: Currency = 0
+    other_taxable_income: Currency = 0  # e.g., Bonuses or 1099 work
+    ordinary_dividends_received: Currency = 0
+    qualified_dividends_received: Currency = 0
 
     # --- Pre-Tax Payroll Deductions ---
-    payroll_to_trad_401k: NominalCurrency = 0
-    payroll_to_hsa: NominalCurrency = 0
-    payroll_to_health_premiums: NominalCurrency = 0
+    payroll_to_trad_401k: Currency = 0
+    payroll_to_hsa: Currency = 0
+    payroll_to_health_premiums: Currency = 0
 
     # --- Post-Tax Payroll Deductions ---
-    payroll_to_roth_401k: NominalCurrency = 0
+    payroll_to_roth_401k: Currency = 0
 
     # --- Employer Matches (Non-cashflow impacts) ---
-    match_to_trad_401k: NominalCurrency = 0
-    match_to_hsa: NominalCurrency = 0
-    match_to_roth_401k: NominalCurrency = 0
+    match_to_trad_401k: Currency = 0
+    match_to_hsa: Currency = 0
+    match_to_roth_401k: Currency = 0
 
     # --- Mandatory Outflows ---
-    to_taxes: NominalCurrency = 0
-    to_mortgage: NominalCurrency = 0
-    to_lifestyle_spending: NominalCurrency = 0
+    to_taxes: Currency = 0
+    to_mortgage: Currency = 0
+    to_lifestyle_spending: Currency = 0
 
     # --- Post-Tax Savings (Discretionary) ---
-    to_roth_ira: NominalCurrency = 0
-    to_brokerage: NominalCurrency = 0
-    to_cash_reserve: NominalCurrency = 0
+    to_roth_ira: Currency = 0
+    to_brokerage: Currency = 0
+    to_cash_reserve: Currency = 0
 
     # --- Withdrawals (Decumulation) ---
-    from_traditional_retirement: NominalCurrency = 0
-    from_hsa_nonmedical: NominalCurrency = 0
-    from_taxable_brokerage_growth: NominalCurrency = 0
-    from_taxable_brokerage_basis: NominalCurrency = 0
-    from_roth_retirement_basis: NominalCurrency = 0  # Tax-free, penalty-free
-    from_roth_conversion_penalized: NominalCurrency = 0  # No tax, 10% penalty
-    from_roth_retirement_earnings: NominalCurrency = 0  # Taxable + 10% penalty if < 60
-    from_cash_reserve: NominalCurrency = 0
+    from_traditional_retirement: Currency = 0
+    from_hsa_nonmedical: Currency = 0
+    from_taxable_brokerage_growth: Currency = 0
+    from_taxable_brokerage_basis: Currency = 0
+    from_roth_retirement_basis: Currency = 0  # Tax-free, penalty-free
+    from_roth_conversion_penalized: Currency = 0  # No tax, 10% penalty
+    from_roth_retirement_earnings: Currency = 0  # Taxable + 10% penalty if < 60
+    from_cash_reserve: Currency = 0
 
     # --- Conversions ---
-    trad_to_roth_conversion: NominalCurrency = 0
+    trad_to_roth_conversion: Currency = 0
 
     @property
-    def to_roth(self) -> NominalCurrency:
+    def to_roth(self) -> Currency:
         """The amount (no employer match) put into roth accounts"""
         return self.to_roth_ira + self.payroll_to_roth_401k
 
     @property
-    def from_roth_retirement(self) -> NominalCurrency:
+    def from_roth_retirement(self) -> Currency:
         """The total amount pulled from Roth for cash flow balancing."""
         return (
             self.from_roth_retirement_basis
@@ -180,20 +180,20 @@ class YearlyDecisionsPlan:
         )
 
     @property
-    def current_cash_shortfall(self) -> NominalCurrency:
+    def current_cash_shortfall(self) -> Currency:
         """If positive, you need to withdraw. If negative, you have a surplus."""
         return self.total_outflows - self.total_inflows
 
     @property
-    def dividends_received(self) -> NominalCurrency:
+    def dividends_received(self) -> Currency:
         return self.ordinary_dividends_received + self.qualified_dividends_received
 
     @property
-    def to_healthcare_spending(self) -> NominalCurrency:
+    def to_healthcare_spending(self) -> Currency:
         return self.payroll_to_health_premiums
 
     @property
-    def total_inflows(self) -> NominalCurrency:
+    def total_inflows(self) -> Currency:
         return (
             self.gross_earned_income
             + self.social_security_received
@@ -209,7 +209,7 @@ class YearlyDecisionsPlan:
         )
 
     @property
-    def total_outflows(self) -> NominalCurrency:
+    def total_outflows(self) -> Currency:
         return (
             self.payroll_to_trad_401k
             + self.payroll_to_hsa
@@ -231,7 +231,7 @@ class YearlyDecisionsPlan:
 
 @dataclass(frozen=True)
 class YearlyMetrics:
-    taxable_income: NominalCurrency
+    taxable_income: Currency
     effective_tax_rate: float
 
 

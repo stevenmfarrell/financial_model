@@ -126,7 +126,7 @@ def main():
             print(f"Mean Failure Age: {np.mean(results['failure_ages']):.1f}")
 
     def run_single():
-        history_tuples = run_simulation(
+        history = run_simulation(
             years=60,
             initial_world=initial_world,
             initial_financial=initial_financial,
@@ -134,10 +134,10 @@ def main():
             market_conditions_provider=market_provider,
             regulations_factory=regulations_factory,
             config=decisions_factory(),
-            random_seed=26,
+            random_seed=25,
         )
 
-        df = create_history_dataframe(history_tuples)
+        df = create_history_dataframe(history)
         df.to_csv("simulation_results.csv", float_format="%.2f", index=False)
         print("Simulation successful. Results saved to simulation_results.csv")
 

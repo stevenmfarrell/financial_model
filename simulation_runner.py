@@ -3,6 +3,7 @@
 from typing import List
 from dataclasses import replace
 from decisions_config import YearlyDecisionsConfiguration
+from inflation import to_real_dollars
 from models import (
     FinancialState,
     MarketConditions,
@@ -25,6 +26,27 @@ SimulationOutputRecord = tuple[
 ]
 
 
+def nominal_history_to_real_history(
+    nominal_history: List[SimulationOutputRecord],
+) -> List[SimulationOutputRecord]:
+    """Deflate a list of SimulationOutputRecords into real dollars"""
+    real_history = []
+    for world, personal, market, financial, metrics, decisions in nominal_history:
+        inf_index = world.cumulative_inflation_index
+
+        real_history.append(
+            (
+                world,
+                personal,
+                market,
+                to_real_dollars(financial, inf_index),
+                to_real_dollars(metrics, inf_index),
+                to_real_dollars(decisions, inf_index),
+            )
+        )
+    return real_history
+
+
 def run_simulation(
     years: int,
     initial_world: WorldState,
@@ -34,9 +56,10 @@ def run_simulation(
     regulations_factory: RegulationsFactory,
     config: YearlyDecisionsConfiguration,
     random_seed: int | None = None,
+    return_real_dollars: bool = True,
 ) -> List[SimulationOutputRecord]:
     """
-    Runs the simulation for X years and returns a history of the states.
+    Runs the simulation for X years and returns a history of the states, in real dollars by default
     """
     history: List[SimulationOutputRecord] = []
     year_start_financial = initial_financial
@@ -84,4 +107,8 @@ def run_simulation(
         year_start_personal = year_end_personal
         year_start_financial = year_end_financial
 
-    return history
+    if return_real_dollars:
+        real_history = nominal_history_to_real_history(history)
+        return real_history
+    else:
+        return history
