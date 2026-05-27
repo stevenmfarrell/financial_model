@@ -1,11 +1,18 @@
 import pandas as pd
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 
 app = Flask(__name__)
 
 
 @app.route("/")
 def dashboard():
+    """Serves the main HTML interface."""
+    return render_template("dashboard.html")
+
+
+@app.route("/api/data")
+def get_data():
+    """API endpoint providing the simulation data as JSON."""
     try:
         df = pd.read_csv("simulation_results.csv")
 
@@ -63,9 +70,10 @@ def dashboard():
             },
         }
 
-        return render_template("dashboard.html", data=data_packet)
+        return jsonify(data_packet)
+
     except Exception as e:
-        return f"Error: {e}"
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
