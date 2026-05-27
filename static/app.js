@@ -34,7 +34,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const commonLayout = {
             template: 'plotly_white',
             hovermode: 'x unified',
-            margin: { l: 90, r: 30, t: 30, b: 50 },
+            // Increase the bottom margin ('b') to make room for the legend
+            margin: { l: 90, r: 30, t: 30, b: 100 },
+            legend: {
+                orientation: 'h', // Make the legend horizontal
+                y: -0.25,         // Push it below the x-axis labels
+                yanchor: 'top'
+            },
             xaxis: {
                 tickmode: 'array',
                 tickvals: tickVals,
@@ -42,7 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 automargin: true
             },
             yaxis: {
-                automargin: true,
+                automargin: false,
                 tickformat: '$.2s',
                 title: { standoff: 20 }
             }
