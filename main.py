@@ -18,7 +18,10 @@ from output import create_history_dataframe
 from strategies.conversion import FillTaxBracketConversion
 from strategies.mortgage import FixedMortgage
 from strategies.payroll import MaximizeContributionsPayroll
-from strategies.rebalance import LinearGlidePath, TaxAwareGlidePathRebalance
+from strategies.rebalance import (
+    BondTentGlidePath,
+    TaxAwareGlidePathRebalance,
+)
 from strategies.savings import WaterfallSavings
 from strategies.spending import GuytonKlingerSpendingStrategy
 from strategies.income import BaristaRetirementWages
@@ -96,13 +99,18 @@ def main():
             mortgage_strat=FixedMortgage(),
             conversion_strat=FillTaxBracketConversion(0.12),
             savings_strat=WaterfallSavings(target_cash_reserve=20000),
+            # withdrawal_strat=DynamicCashBufferWithdrawal(
+            #     target_buffer_years=1, market_health_threshold=0.10
+            # ),
             withdrawal_strat=SequentialWithdrawal(),
             rebalance_strat=TaxAwareGlidePathRebalance(
-                LinearGlidePath(
-                    glide_start_age=35,
-                    glide_end_age=50,
+                BondTentGlidePath(
                     initial_stock_ratio=0.8,
-                    final_stock_ratio=0.50,
+                    final_stock_ratio=0.70,
+                    peak_stock_ratio=0.4,
+                    glide_down_start_age=35,
+                    glide_up_end_age=60,
+                    retirement_age=40,
                 )
             ),
         )
@@ -141,8 +149,8 @@ def main():
         df.to_csv("simulation_results.csv", float_format="%.2f", index=False)
         print("Simulation successful. Results saved to simulation_results.csv")
 
-    # run_monte_carlo()
-    run_single()
+    run_monte_carlo()
+    # run_single()
 
 
 if __name__ == "__main__":

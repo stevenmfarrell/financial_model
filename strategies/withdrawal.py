@@ -144,3 +144,146 @@ class SequentialWithdrawal(WithdrawalStrategy):
     def _withdraw_hsa_nonmedical(self, shortfall: float, financial: FinancialState):
         amount = min(shortfall, financial.hsa_balance)
         return amount, shortfall - amount, {"from_hsa_nonmedical": amount}
+
+
+class DynamicCashBufferWithdrawal(SequentialWithdrawal):
+    """
+    Implements a Bucket Strategy to mitigate Sequence of Return Risk (SORR).
+
+    - When the market is up, it withdraws from the portfolio to cover expenses
+      AND refills a multi-year cash buffer.
+    - When the market is down, it halts replenishment and spends from the cash
+      buffer first to avoid selling equities at a loss.
+    """
+
+    def __init__(
+        self, target_buffer_years: float = 2.0, market_health_threshold: float = 0.0
+    ):
+        """
+        Args:
+            target_buffer_years: How many years of core expenses to keep in cash.
+            market_health_threshold: The real return rate required to trigger
+                                     portfolio withdrawals and cash replenishment.
+        """
+        self.target_buffer_years = target_buffer_years
+        self.market_health_threshold = market_health_threshold
+
+    def __call__(
+        self,
+        context: SimulationContext,
+        plan: YearlyDecisionsPlan,
+    ) -> YearlyDecisionsPlan:
+        financial = context.financial
+        age = context.personal.age
+
+        # Reset all dynamic cashflows for the iteration
+        plan = replace(
+            plan,
+            from_traditional_retirement=0,
+            from_hsa_nonmedical=0,
+            from_taxable_brokerage_growth=0,
+            from_taxable_brokerage_basis=0,
+            from_roth_retirement_basis=0,
+            from_roth_conversion_penalized=0,
+            from_roth_retirement_earnings=0,
+            from_cash_reserve=0,
+            to_cash_reserve=0,  # Reset replenishment
+        )
+
+        # --- 1. Required Minimum Distribution (RMD) logic ---
+        rmd_amount = 0.0
+        rmd_start_age = 75
+        if age >= rmd_start_age:
+            from regulatory_kernel.limits import calculate_uniform_lifetime_divisor
+
+            divisor = calculate_uniform_lifetime_divisor(age)
+            if divisor > 0:
+                rmd_amount = financial.traditional_retirement_balance / divisor
+
+        plan = replace(plan, from_traditional_retirement=rmd_amount)
+
+        # --- 2. Determine Market Health & Cash Target ---
+        # We use fixed expenses (lifestyle + mortgage) for the target so it stays
+        # stable during the iterative tax-solver loop.
+        core_annual_expenses = plan.to_lifestyle_spending + plan.to_mortgage
+        target_cash_balance = core_annual_expenses * self.target_buffer_years
+
+        # Calculate the "Real" return of the stock market this year
+        real_stock_return = (
+            context.market.annual_total_stock_return
+            - context.market.annual_inflation_rate
+        )
+        is_market_healthy = real_stock_return >= self.market_health_threshold
+
+        # --- 3. Formulate Dynamic Strategy ---
+        if is_market_healthy:
+            max_refill_this_year = core_annual_expenses * 0.25
+
+            desired_replenish = max(0.0, target_cash_balance - financial.cash_balance)
+            replenish_amount = min(
+                desired_replenish,
+                max_refill_this_year,
+                financial.taxable_brokerage_balance,  # Restrict source
+            )
+            plan = replace(plan, to_cash_reserve=replenish_amount)
+
+            if age < 60:
+                order = [
+                    "brokerage",
+                    "roth_basis",
+                    "trad",
+                    "roth_earnings",
+                    "hsa",
+                    "cash",
+                ]
+            else:
+                order = [
+                    "brokerage",
+                    "roth_basis",
+                    "roth_earnings",
+                    "trad",
+                    "hsa",
+                    "cash",
+                ]
+        else:
+            # DOWN MARKET: Halt replenishment. Spend cash first to protect portfolio.
+            plan = replace(plan, to_cash_reserve=0.0)
+
+            if age < 60:
+                order = [
+                    "cash",
+                    "brokerage",
+                    "roth_basis",
+                    "trad",
+                    "roth_earnings",
+                    "hsa",
+                ]
+            else:
+                order = [
+                    "cash",
+                    "brokerage",
+                    "roth_basis",
+                    "roth_earnings",
+                    "trad",
+                    "hsa",
+                ]
+
+        # --- 4. Execute Withdrawal Waterfall ---
+        # The shortfall now naturally includes our `to_cash_reserve` request if the market is up!
+        shortfall = max(0.0, plan.current_cash_shortfall)
+
+        if shortfall <= 0:
+            return plan
+
+        updates = {}
+        for bucket in order:
+            if shortfall <= 0:
+                break
+
+            # Re-use the bucket helpers inherited from SequentialWithdrawal
+            withdrawn, shortfall, bucket_updates = self._withdraw_from_bucket(
+                bucket, shortfall, financial
+            )
+            updates.update(bucket_updates)
+
+        return replace(plan, **updates)
