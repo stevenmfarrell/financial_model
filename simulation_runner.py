@@ -1,7 +1,7 @@
 # financial_model/runner.py
 
 from typing import List
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from decisions_config import YearlyDecisionsConfiguration
 from inflation import to_real_dollars
 from models import (
@@ -47,6 +47,14 @@ def nominal_history_to_real_history(
     return real_history
 
 
+@dataclass(frozen=True)
+class SimulationResults:
+    history: List[SimulationOutputRecord]
+    final_financial_state: FinancialState
+    success: bool
+    failure_age: int | None
+
+
 def run_simulation(
     years: int,
     initial_world: WorldState,
@@ -57,7 +65,7 @@ def run_simulation(
     config: YearlyDecisionsConfiguration,
     random_seed: int | None = None,
     return_real_dollars: bool = True,
-) -> List[SimulationOutputRecord]:
+) -> SimulationResults:
     """
     Runs the simulation for X years and returns a history of the states, in real dollars by default
     """
@@ -67,7 +75,8 @@ def run_simulation(
     year_start_world = initial_world
 
     market_conditions_list = market_conditions_provider(years, random_seed)
-
+    success = True
+    failure_age = None
     for i in range(years):
         market = market_conditions_list[i]
         try:
@@ -100,6 +109,8 @@ def run_simulation(
             )
         except BankruptcyError as e:
             print(f"Simulation failed at age {year_start_personal.age}: {e}")
+            success = False
+            failure_age = year_start_personal.age
             break
 
         # Move to start of next year
@@ -108,7 +119,10 @@ def run_simulation(
         year_start_financial = year_end_financial
 
     if return_real_dollars:
-        real_history = nominal_history_to_real_history(history)
-        return real_history
-    else:
-        return history
+        history = nominal_history_to_real_history(history)
+    return SimulationResults(
+        history=history,
+        final_financial_state=history[-1][3],
+        success=success,
+        failure_age=failure_age,
+    )
