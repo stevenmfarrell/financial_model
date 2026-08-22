@@ -1,8 +1,8 @@
 from models import RegulatoryEnvironment, WorldState
 from regulations.limits import (
     InflationTracking401kLimit,
-    InflationTrackingHSALimit,
     InflationTrackingHouseholdRothIRALimit,
+    InflationTrackingHSALimit,
 )
 from regulations.social_security import InflationTrackingSocialSecurityPayout
 from regulations.tax import (
@@ -11,7 +11,6 @@ from regulations.tax import (
     InflationTrackingFederalTaxCalculator,
     InflationTrackingTaxableIncomeCalculator,
 )
-
 
 federal_taxes_calc = InflationTrackingFederalTaxCalculator(
     # --- Standard Deductions ---

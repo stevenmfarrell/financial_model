@@ -1,5 +1,5 @@
 import pandas as pd
-from flask import Flask, render_template, jsonify
+from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 
@@ -72,9 +72,20 @@ def get_data():
 
         return jsonify(data_packet)
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/monte_carlo")
+def get_monte_carlo_data():
+    """API endpoint providing Monte Carlo median and percentile data as JSON."""
+    try:
+        df = pd.read_csv("monte_carlo_median_results.csv")
+        return jsonify(df.to_dict(orient="list"))
+    except Exception as e:  # noqa: BLE001
         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    app.run(debug=True, port=8080)
+

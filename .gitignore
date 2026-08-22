@@ -11,4 +11,6 @@ wheels/
 
 .DS_Store
 
-simulation_results.csv
+*.csv
+!market/historical.csv
+

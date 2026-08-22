@@ -1,14 +1,13 @@
 from dataclasses import replace
-from typing import Tuple
 
 from decisions_config import YearlyDecisionsConfiguration
 from models import (
     FinancialState,
     MarketConditions,
-    RegulationsFactory,
-    SimulationContext,
-    RegulatoryCalculator,
     PersonalState,
+    RegulationsFactory,
+    RegulatoryCalculator,
+    SimulationContext,
     WithdrawalStrategy,
     WorldState,
     YearlyDecisionsPlan,
@@ -274,7 +273,7 @@ def simulate_year(
     market: MarketConditions,
     regulations_factory: RegulationsFactory,
     config: YearlyDecisionsConfiguration,
-) -> Tuple[
+) -> tuple[
     WorldState, FinancialState, PersonalState, YearlyMetrics, YearlyDecisionsPlan
 ]:
     """

@@ -1,21 +1,17 @@
-import numpy as np
-
 from decisions_config import YearlyDecisionsConfiguration
 from market.providers import (
     RandomHistoricalMarketProvider,
 )
 from models import (
     FinancialState,
-    WorldState,
     PersonalState,
+    WorldState,
 )
 from monte_carlo_runner import MonteCarloRunner
 from regulatory_environment import regulations_factory
 from simulation_runner import run_simulation
-
-from output import create_history_dataframe
-
 from strategies.conversion import FillTaxBracketConversion
+from strategies.income import BaristaRetirementWages
 from strategies.mortgage import FixedMortgage
 from strategies.payroll import MaximizeContributionsPayroll
 from strategies.rebalance import (
@@ -24,9 +20,7 @@ from strategies.rebalance import (
 )
 from strategies.savings import WaterfallSavings
 from strategies.spending import GuytonKlingerSpendingStrategy
-from strategies.income import BaristaRetirementWages
 from strategies.withdrawal import SequentialWithdrawal
-
 
 initial_world = WorldState(year=2026)
 initial_personal = PersonalState(
@@ -68,7 +62,7 @@ market_provider = RandomHistoricalMarketProvider(block_size=5)
 def decisions_factory() -> YearlyDecisionsConfiguration:
     decisions_config = YearlyDecisionsConfiguration(
         income_strat=BaristaRetirementWages(
-            initial_salary=150000.0,
+            initial_salary=158000.0,
             barista_salary=25000,
             barista_retirement_age=40,
             full_retirement_age=60,

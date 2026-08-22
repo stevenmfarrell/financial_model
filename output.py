@@ -1,14 +1,12 @@
-import pandas as pd
-from typing import (
-    Any,
-    List,
-)
 from dataclasses import fields
+from typing import Any
+
+import pandas as pd
 
 from simulation_runner import SimulationOutputRecord
 
 
-def create_history_dataframe(history: List[SimulationOutputRecord]) -> pd.DataFrame:
+def create_history_dataframe(history: list[SimulationOutputRecord]) -> pd.DataFrame:
     """
     Converts a simulation history into a pandas DataFrame.
     Strictly extracts the exact state of the provided objects.

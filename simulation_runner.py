@@ -1,7 +1,7 @@
 # financial_model/runner.py
 
-from typing import List
 from dataclasses import dataclass, replace
+
 from decisions_config import YearlyDecisionsConfiguration
 from inflation import to_real_dollars
 from models import (
@@ -27,8 +27,8 @@ SimulationOutputRecord = tuple[
 
 
 def nominal_history_to_real_history(
-    nominal_history: List[SimulationOutputRecord],
-) -> List[SimulationOutputRecord]:
+    nominal_history: list[SimulationOutputRecord],
+) -> list[SimulationOutputRecord]:
     """Deflate a list of SimulationOutputRecords into real dollars"""
     real_history = []
     for world, personal, market, financial, metrics, decisions in nominal_history:
@@ -49,7 +49,7 @@ def nominal_history_to_real_history(
 
 @dataclass(frozen=True)
 class SimulationResults:
-    history: List[SimulationOutputRecord]
+    history: list[SimulationOutputRecord]
     final_financial_state: FinancialState
     success: bool
     failure_age: int | None
@@ -69,7 +69,7 @@ def run_simulation(
     """
     Runs the simulation for X years and returns a history of the states, in real dollars by default
     """
-    history: List[SimulationOutputRecord] = []
+    history: list[SimulationOutputRecord] = []
     year_start_financial = initial_financial
     year_start_personal = initial_personal
     year_start_world = initial_world

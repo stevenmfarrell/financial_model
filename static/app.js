@@ -128,6 +128,53 @@ document.addEventListener("DOMContentLoaded", async () => {
             yaxis: { ...commonLayout.yaxis, title: 'Amount (Real $)' }
         }, plotConfig);
 
+        // 5. Monte Carlo Chart
+        try {
+            const mcResponse = await fetch('/api/monte_carlo');
+            if (mcResponse.ok) {
+                const mcData = await mcResponse.json();
+                if (mcData && mcData.age) {
+                    const mcAges = mcData.age;
+                    Plotly.newPlot('monte_carlo_chart', [
+                        {
+                            x: mcAges,
+                            y: mcData.p90_net_worth,
+                            name: 'P90 Net Worth',
+                            mode: 'lines',
+                            line: { color: '#93c5fd', dash: 'dot' }
+                        },
+                        {
+                            x: mcAges,
+                            y: mcData.median_net_worth,
+                            name: 'Median Net Worth',
+                            mode: 'lines',
+                            line: { width: 3, color: '#1d4ed8' }
+                        },
+                        {
+                            x: mcAges,
+                            y: mcData.median_liquid_assets,
+                            name: 'Median Liquid Assets',
+                            mode: 'lines',
+                            line: { width: 2, color: '#059669' }
+                        },
+                        {
+                            x: mcAges,
+                            y: mcData.p10_net_worth,
+                            name: 'P10 Net Worth',
+                            mode: 'lines',
+                            line: { color: '#fca5a5', dash: 'dot' }
+                        }
+                    ], {
+                        ...commonLayout,
+                        xaxis: { title: 'Age' },
+                        yaxis: { ...commonLayout.yaxis, title: 'Balance (Real $)' }
+                    }, plotConfig);
+                }
+            }
+        } catch (mcErr) {
+            console.warn("Could not load Monte Carlo dashboard data:", mcErr);
+        }
+
     } catch (error) {
         console.error("Failed to load dashboard data:", error);
     }
